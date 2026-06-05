@@ -1,18 +1,37 @@
 export const validateSeat = (req, res, next) => {
-    const { seat_number, booking_id } = req.body;
+    const { seat_number, seats, booking_id } = req.body;
 
     // Validación de campos obligatorios
-    if (!seat_number || !booking_id) {
+    if (!booking_id) {
         return res.status(400).json({ 
-            message: "El número de asiento y el ID de reserva son obligatorios" 
+            message: "El ID de reserva es obligatorio" 
         });
     }
 
-    // Validación de formato de asiento 
     const seatRegex = /^[A-Z]\d{1,2}$/;
-    if (!seatRegex.test(seat_number)) {
+
+    if (seats) {
+        if (!Array.isArray(seats) || seats.length === 0) {
+            return res.status(400).json({
+                message: "El campo 'seats' debe ser un arreglo de asientos no vacío"
+            });
+        }
+        for (let s of seats) {
+            if (!seatRegex.test(s)) {
+                return res.status(400).json({ 
+                    message: `Formato de asiento inválido: ${s} (Ejemplo correcto: A1, B10)` 
+                });
+            }
+        }
+    } else if (seat_number) {
+        if (!seatRegex.test(seat_number)) {
+            return res.status(400).json({ 
+                message: `Formato de asiento inválido: ${seat_number} (Ejemplo correcto: A1, B10)` 
+            });
+        }
+    } else {
         return res.status(400).json({ 
-            message: "Formato de asiento inválido (Ejemplo correcto: A1, B10)" 
+            message: "El número de asiento (o arreglo de asientos) es obligatorio" 
         });
     }
 

@@ -146,10 +146,10 @@ CREATE TABLE IF NOT EXISTS seat_assignments (
 );
 
 -- Seed Seat Assignments
-INSERT INTO seat_assignments (seat_number, booking_id) VALUES
-('A3', 1001),
-('A4', 1001),
-('B5', 1001)
+INSERT INTO seat_assignments (assignment_id, seat_number, booking_id) VALUES
+(1, 'A3', 1001),
+(2, 'A4', 1001),
+(3, 'B5', 1001)
 ON CONFLICT (assignment_id) DO NOTHING;
 
 -- 10. Product Categories table
