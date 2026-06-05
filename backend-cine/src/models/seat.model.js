@@ -29,6 +29,17 @@ const SeatAssignment = {
         
         // Retorna true si el asiento está libre
         return rows.length === 0; 
+    },
+
+    // Obtener todos los asientos ocupados para una función
+    getOccupiedSeats: async (screeningId) => {
+        const query = `
+            SELECT sa.seat_number FROM seat_assignments sa
+            JOIN bookings b ON sa.booking_id = b.booking_id
+            WHERE b.screening_id = $1 
+            AND b.booking_status = 'Confirmada'`;
+        const { rows } = await db.query(query, [screeningId]);
+        return rows.map(r => r.seat_number);
     }
 };
 

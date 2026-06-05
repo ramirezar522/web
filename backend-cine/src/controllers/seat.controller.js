@@ -26,3 +26,12 @@ export const getSeatsByBooking = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const getOccupiedSeats = async (req, res) => {
+    try {
+        const occupiedSeats = await SeatAssignment.getOccupiedSeats(req.params.screeningId);
+        res.json(occupiedSeats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

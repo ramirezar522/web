@@ -12,7 +12,14 @@ const router = Router();
  * @desc    PÚBLICO: Ver los asientos específicos vinculados a una reserva
  * @access  Cualquier usuario
  */
-router.get('/booking/:bookingId', seatController.getSeatsByBooking); // 💡 Se eliminó authMiddleware
+router.get('/booking/:bookingId', seatController.getSeatsByBooking);
+
+/**
+ * @route   GET /api/seats/availability/:screeningId
+ * @desc    PÚBLICO: Ver asientos ocupados para una función
+ * @access  Cualquier usuario
+ */
+router.get('/availability/:screeningId', seatController.getOccupiedSeats);
 
 /**
  * @route   POST /api/seats/assign
