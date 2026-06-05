@@ -5,7 +5,9 @@ const Screening = {
     findAll: async () => {
         const query = `
             SELECT 
-                s.screening_id, 
+                s.screening_id,
+                s.movie_id,
+                s.room_id,
                 s.date_time, 
                 m.title as movie_title, 
                 r.room_number, 
