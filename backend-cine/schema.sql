@@ -60,12 +60,12 @@ CREATE TABLE IF NOT EXISTS movies (
 
 -- Seed Movies
 INSERT INTO movies (movie_id, id, title, director, duration, poster_url, status, genre_id, genre) VALUES
-(1, 1, 'Dune: Parte Dos', 'Denis Villeneuve', 166, 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop', 'Activa', 5, 'Ciencia Ficción'),
-(2, 2, 'Oppenheimer', 'Christopher Nolan', 180, 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop', 'Activa', 2, 'Drama'),
-(3, 3, 'Spider-Man: Across the Spider-Verse', 'Joaquim Dos Santos', 140, 'https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=600&fit=crop', 'Activa', 7, 'Animación'),
-(4, 4, 'John Wick 4', 'Chad Stahelski', 169, 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop', 'Activa', 1, 'Acción'),
-(5, 5, 'Barbie', 'Greta Gerwig', 114, 'https://images.unsplash.com/photo-1560472355-536de3962603?w=400&h=600&fit=crop', 'Activa', 3, 'Comedia'),
-(6, 6, 'The Conjuring 4', 'James Wan', 112, 'https://images.unsplash.com/photo-1505635552518-3b72d4d7d74c?w=400&h=600&fit=crop', 'Activa', 4, 'Terror')
+(1, 1, 'Dune: Parte Dos', 'Denis Villeneuve', 166, 'https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nez7S.jpg', 'Activa', 5, 'Ciencia Ficción'),
+(2, 2, 'Oppenheimer', 'Christopher Nolan', 180, 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', 'Activa', 2, 'Drama'),
+(3, 3, 'Spider-Man: Across the Spider-Verse', 'Joaquim Dos Santos', 140, 'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', 'Activa', 7, 'Animación'),
+(4, 4, 'John Wick 4', 'Chad Stahelski', 169, 'https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg', 'Activa', 1, 'Acción'),
+(5, 5, 'Barbie', 'Greta Gerwig', 114, 'https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg', 'Activa', 3, 'Comedia'),
+(6, 6, 'The Conjuring 4', 'James Wan', 112, 'https://image.tmdb.org/t/p/w500/jVbHMsbnMAvi1fOFijdHqKSVGtn.jpg', 'Activa', 4, 'Terror')
 ON CONFLICT (movie_id) DO NOTHING;
 
 -- 5. Rooms table

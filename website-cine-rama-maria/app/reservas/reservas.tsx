@@ -233,7 +233,7 @@ export default function MyBookingsPage() {
               Explora nuestra cartelera y reserva tu próxima experiencia cinematográfica
             </p>
             <Link
-              href="/billboard"
+              href="/cartelera"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
             >
               <Film className="w-5 h-5" />

@@ -196,7 +196,7 @@ export default function HomePage() {
               </p>
             </div>
             <Link 
-              href="/billboard"
+              href="/cartelera"
               className="hidden sm:flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors group"
             >
               Ver todas
@@ -224,7 +224,7 @@ export default function HomePage() {
           {/* Mobile CTA */}
           <div className="sm:hidden text-center">
             <Link 
-              href="/billboard"
+              href="/cartelera"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
             >
               Ver toda la cartelera
@@ -253,14 +253,14 @@ export default function HomePage() {
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
-                  href="/register"
+                  href="/registro"
                   className="flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
                 >
                   Crear Cuenta Gratis
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
-                  href="/billboard"
+                  href="/cartelera"
                   className="flex items-center gap-2 px-8 py-4 rounded-xl border border-foreground/20 text-foreground font-semibold hover:bg-secondary transition-all"
                 >
                   Explorar Cartelera
@@ -288,7 +288,7 @@ export default function HomePage() {
             {/* Links */}
             <div className="flex items-center gap-8 text-sm text-muted-foreground">
               <Link href="/" className="hover:text-foreground transition-colors">Inicio</Link>
-              <Link href="/billboard" className="hover:text-foreground transition-colors">Cartelera</Link>
+              <Link href="/cartelera" className="hover:text-foreground transition-colors">Cartelera</Link>
               <Link href="/login" className="hover:text-foreground transition-colors">Iniciar Sesión</Link>
             </div>
 

@@ -35,7 +35,7 @@ export function Navbar() {
                 Inicio
               </Link>
               <Link 
-                href="/billboard" 
+                href="/cartelera" 
                 className="text-muted-foreground hover:text-primary transition-colors font-medium"
               >
                 Cartelera
@@ -51,7 +51,7 @@ export function Navbar() {
               {isAuthenticated && user ? (
                 <div className="flex items-center gap-4">
                   <Link
-                    href="/my-bookings"
+                    href="/reservas"
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
                   >
                     <Ticket className="w-4 h-4" />
@@ -83,7 +83,7 @@ export function Navbar() {
                     Iniciar Sesión
                   </Link>
                   <Link
-                    href="/register"
+                    href="/registro"
                     className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
                   >
                     <Ticket className="w-4 h-4" />
@@ -118,7 +118,7 @@ export function Navbar() {
                   Inicio
                 </Link>
                 <Link 
-                  href="/billboard" 
+                  href="/cartelera" 
                   className="text-muted-foreground hover:text-primary transition-colors font-medium py-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -138,7 +138,7 @@ export function Navbar() {
                 {isAuthenticated && user ? (
                   <>
                     <Link 
-                      href="/my-bookings" 
+                      href="/reservas" 
                       className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-medium py-2"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -172,7 +172,7 @@ export function Navbar() {
                       Iniciar Sesión
                     </Link>
                     <Link
-                      href="/register"
+                      href="/registro"
                       className="inline-flex items-center justify-center gap-2 py-2 rounded-lg bg-primary text-primary-foreground font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >

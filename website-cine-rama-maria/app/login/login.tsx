@@ -120,7 +120,7 @@ export default function LoginPage() {
             {/* Forgot password link */}
             <div className="flex justify-end">
               <Link 
-                href="/recover-password" 
+                href="/recuperar-contraseña" 
                 className="text-sm text-primary hover:text-primary/80 transition-colors"
               >
                 ¿Olvidaste tu contraseña?
@@ -147,7 +147,7 @@ export default function LoginPage() {
           {/* Register link */}
           <p className="mt-8 text-center text-muted-foreground">
             ¿No tienes una cuenta?{' '}
-            <Link href="/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
+            <Link href="/registro" className="text-primary hover:text-primary/80 font-medium transition-colors">
               Regístrate aquí
             </Link>
           </p>
