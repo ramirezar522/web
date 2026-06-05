@@ -120,140 +120,228 @@ export interface CreateCustomerRequest {
   email?: string;
 }
 
+// --- Helper: Normaliza la respuesta del backend ---
+// El backend a veces devuelve un array directo [...] y a veces { data: [...] }
+// Esta función siempre retorna { data, error }
+function normalizeResponse<T>(raw: any): { data: T; error?: string | null } {
+  // Si la respuesta ya tiene la forma { data: ... } (como auth endpoints)
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in raw) {
+    return { data: raw.data as T, error: raw.error || null };
+  }
+  // Si es un array directo (como movies, genres, etc.)
+  return { data: raw as T, error: null };
+}
 
 // --- 2. OBJETOS DE LA API (Hacia tus endpoints en plural del Backend) ---
 
 // Módulo de Cine y Cartelera
 export const moviesApi = {
   getAll: async (): Promise<{ data: Movie[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/movies`);
-    if (!response.ok) throw new Error('Error al cargar películas');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/movies`);
+      if (!response.ok) throw new Error('Error al cargar películas');
+      const raw = await response.json();
+      return normalizeResponse<Movie[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   },
   getById: async (id: number): Promise<{ data: Movie; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/movies/${id}`);
-    if (!response.ok) throw new Error('Error al obtener la película');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/movies/${id}`);
+      if (!response.ok) throw new Error('Error al obtener la película');
+      const raw = await response.json();
+      return normalizeResponse<Movie>(raw);
+    } catch (err: any) {
+      return { data: {} as Movie, error: err.message };
+    }
   }
 };
 
 export const genresApi = {
   getAll: async (): Promise<{ data: Genre[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/genres`);
-    if (!response.ok) throw new Error('Error al cargar géneros');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/genres`);
+      if (!response.ok) throw new Error('Error al cargar géneros');
+      const raw = await response.json();
+      return normalizeResponse<Genre[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   }
 };
 
 export const screeningsApi = {
   getAll: async (): Promise<{ data: Screening[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/screenings`);
-    if (!response.ok) throw new Error('Error al cargar funciones');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/screenings`);
+      if (!response.ok) throw new Error('Error al cargar funciones');
+      const raw = await response.json();
+      return normalizeResponse<Screening[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   },
   getByMovie: async (movieId: number): Promise<{ data: Screening[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/screenings/movie/${movieId}`);
-    if (!response.ok) throw new Error('Error al cargar funciones de la película');
-    return response.json();
+    try {
+      // The backend doesn't have a /screenings/movie/:id route,
+      // so we fetch all and filter client-side
+      const response = await fetch(`${BASE_URL}/screenings`);
+      if (!response.ok) throw new Error('Error al cargar funciones de la película');
+      const raw = await response.json();
+      const allScreenings = normalizeResponse<Screening[]>(raw);
+      const filtered = allScreenings.data.filter(s => s.movie_id === movieId);
+      return { data: filtered, error: null };
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   }
 };
 
 export const roomsApi = {
   getAll: async (): Promise<{ data: Room[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/rooms`);
-    if (!response.ok) throw new Error('Error al cargar salas');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/rooms`);
+      if (!response.ok) throw new Error('Error al cargar salas');
+      const raw = await response.json();
+      return normalizeResponse<Room[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   }
 };
 
 export const seatsApi = {
   getByRoom: async (roomId: number): Promise<{ data: SeatAssignment[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/seats/room/${roomId}`);
-    if (!response.ok) throw new Error('Error al cargar los asientos de la sala');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/seats/room/${roomId}`);
+      if (!response.ok) throw new Error('Error al cargar los asientos de la sala');
+      const raw = await response.json();
+      return normalizeResponse<SeatAssignment[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   },
   getByBooking: async (bookingId: number): Promise<{ data: SeatAssignment[]; error?: string | null }> => {
-    const response = await fetch(`${BASE_URL}/seats/booking/${bookingId}`);
-    if (!response.ok) throw new Error('Error al cargar los asientos de la reserva');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/seats/booking/${bookingId}`);
+      if (!response.ok) throw new Error('Error al cargar los asientos de la reserva');
+      const raw = await response.json();
+      return normalizeResponse<SeatAssignment[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   },
   getAvailability: async (screeningId: number): Promise<string[]> => {
-    const response = await fetch(`${BASE_URL}/seats/availability/${screeningId}`);
-    if (!response.ok) throw new Error('Error al cargar la disponibilidad de asientos');
-    const result = await response.json();
-    return result.data || result;
+    try {
+      const response = await fetch(`${BASE_URL}/seats/availability/${screeningId}`);
+      if (!response.ok) throw new Error('Error al cargar la disponibilidad de asientos');
+      const result = await response.json();
+      return result.data || result || [];
+    } catch {
+      return [];
+    }
   },
   assign: async (payload: { booking_id?: number; seats: string[] }): Promise<any> => {
-    const response = await fetch(`${BASE_URL}/seats/assign`, {
-      method: 'POST',
-      headers: {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        bookingId: payload.booking_id,
-        seats: payload.seats
-      })
-    });
-    if (!response.ok) throw new Error('Error al asignar asientos');
-    return response.json();
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/seats/assign`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          booking_id: payload.booking_id,
+          seats: payload.seats
+        })
+      });
+      if (!response.ok) throw new Error('Error al asignar asientos');
+      return response.json();
+    } catch (err: any) {
+      return { error: err.message };
+    }
   }
 };
 
 // Módulo de Ventas y Reservas
 export const bookingsApi = {
   getAll: async (): Promise<{ data: Booking[]; error?: string | null }> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/bookings`, { headers });
+      if (!response.ok) throw new Error('Error al cargar reservas');
+      const raw = await response.json();
+      return normalizeResponse<Booking[]>(raw);
+    } catch (err: any) {
+      return { data: [], error: err.message };
     }
-    const response = await fetch(`${BASE_URL}/bookings`, { headers });
-    if (!response.ok) throw new Error('Error al cargar reservas');
-    return response.json();
   },
   getById: async (id: number): Promise<{ data: Booking; error?: string | null }> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/bookings/${id}`, { headers });
+      if (!response.ok) throw new Error('Error al obtener la reserva');
+      const raw = await response.json();
+      return normalizeResponse<Booking>(raw);
+    } catch (err: any) {
+      return { data: {} as Booking, error: err.message };
     }
-    const response = await fetch(`${BASE_URL}/bookings/${id}`, { headers });
-    if (!response.ok) throw new Error('Error al obtener la reserva');
-    return response.json();
   },
   create: async (bookingData: Booking): Promise<{ data: Booking; error?: string | null }> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/bookings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(bookingData),
+      });
+      if (!response.ok) throw new Error('Error al procesar la reserva');
+      const raw = await response.json();
+      return normalizeResponse<Booking>(raw);
+    } catch (err: any) {
+      return { data: {} as Booking, error: err.message };
     }
-    const response = await fetch(`${BASE_URL}/bookings`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(bookingData),
-    });
-    if (!response.ok) throw new Error('Error al procesar la reserva');
-    return response.json();
   },
   cancel: async (id: number): Promise<{ data: any; error?: string | null }> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/bookings/${id}/cancel`, {
+        method: 'PATCH',
+        headers
+      });
+      if (!response.ok) throw new Error('Error al cancelar la reserva');
+      const raw = await response.json();
+      return normalizeResponse<any>(raw);
+    } catch (err: any) {
+      return { data: null, error: err.message };
     }
-    const response = await fetch(`${BASE_URL}/bookings/${id}/cancel`, {
-      method: 'PATCH',
-      headers
-    });
-    if (!response.ok) throw new Error('Error al cancelar la reserva');
-    return response.json();
   }
 };
