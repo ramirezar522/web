@@ -26,6 +26,10 @@ app.use(express.urlencoded({ extended: true })); // Habilita la lectura de datos
 
 // --- DEFINICIÓN DE RUTAS (API ENDPOINTS) ---
 
+app.get('/', (req, res) => {
+  res.json({ message: "El servidor de la API del Cine está online y funcionando correctamente." });
+});
+
 // Módulo de Seguridad y Usuarios
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
