@@ -5,6 +5,8 @@ import { persist } from 'zustand/middleware'
 // Nota: Ajustamos la importación para que no pida tipos rotos
 import { moviesApi } from './api' 
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-sj8l.onrender.com/api';
+
 // User type matching your PostgreSQL schema
 export interface User {
   user_id: number
@@ -53,8 +55,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null })
         
         try {
-          // Intentamos hacer la petición fetch directa a tu backend local (puerto 5000)
-          const response = await fetch('http://localhost:5000/api/auth/login', {
+          // Intentamos hacer la petición fetch directa a tu backend de producción o local
+          const response = await fetch(`${BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -121,7 +123,7 @@ export const useAuthStore = create<AuthState>()(
         if (!token) return
 
         try {
-          const response = await fetch('http://localhost:5000/api/auth/perfil', {
+          const response = await fetch(`${BASE_URL}/auth/perfil`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },

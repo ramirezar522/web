@@ -1,5 +1,5 @@
 // Centralized API Service for Cinema Management System
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-sj8l.onrender.com/api';
 
 // Función auxiliar para centralizar las peticiones HTTP y manejo de Tokens (JWT)
 const apiRequest = async (endpoint, options = {}) => {

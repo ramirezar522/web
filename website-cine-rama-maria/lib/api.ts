@@ -1,6 +1,6 @@
 // WEBSITE-CINE / lib / api.ts
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-sj8l.onrender.com/api';
 
 // --- 1. DEFINICIÓN DE TIPOS (Interfaces para TypeScript) ---
 export interface Movie {
