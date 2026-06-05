@@ -57,7 +57,7 @@ export default function RegisterPage() {
     try {
       // Call POST /api/auth/register endpoint (Note: in your backend this requires auth)
       // For client registration, you might have a public endpoint
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-sj8l.onrender.com/api'
       
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',

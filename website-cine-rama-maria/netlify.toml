@@ -4,3 +4,6 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://web-sj8l.onrender.com/api"

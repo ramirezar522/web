@@ -23,7 +23,7 @@ export default function RecoverPasswordPage() {
 
     try {
       // Call POST /api/auth/recover-password endpoint
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-sj8l.onrender.com/api'
       
       const response = await fetch(`${API_BASE_URL}/auth/recover-password`, {
         method: 'POST',
