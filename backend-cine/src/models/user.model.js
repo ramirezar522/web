@@ -25,11 +25,10 @@ export const User = {
         return result.rows[0];
     },
 
-    // Crear un nuevo usuario (Gerente o Empleado)
     create: async ({ first_name, last_name, email, password, role_id, status }) => {
         const result = await query(
             `INSERT INTO users (first_name, last_name, email, password, role_id, status) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id, email, first_name`,
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id, email, first_name, last_name`,
             [first_name, last_name, email, password, role_id, status]
         );
         return result.rows[0];
