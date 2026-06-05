@@ -365,5 +365,26 @@ export const bookingsApi = {
     } catch (err: any) {
       return { data: null, error: err.message };
     }
+  },
+  sendEmail: async (bookingId: number, email?: string): Promise<{ data: any; error?: string | null }> => {
+    try {
+      const token = getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/bookings/${bookingId}/send-email`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ email })
+      });
+      if (!response.ok) throw new Error('Error al enviar el ticket por correo');
+      const raw = await response.json();
+      return normalizeResponse<any>(raw);
+    } catch (err: any) {
+      return { data: null, error: err.message };
+    }
   }
 };

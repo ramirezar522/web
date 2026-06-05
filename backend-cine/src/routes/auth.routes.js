@@ -9,8 +9,8 @@ const router = Router();
 router.post('/login', login);
 
 // POST /api/auth/register
-// PRIVADO: Registro de nuevo personal (Solo accesible por Gerente)
-router.post('/register', authMiddleware, isGerente, register);
+// PÚBLICO: Registro de nuevo personal/usuarios
+router.post('/register', register);
 
 // GET /api/auth/me
 // Obtener los datos del usuario logueado actualmente

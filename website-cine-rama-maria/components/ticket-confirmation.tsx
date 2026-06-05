@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { QrCode, Calendar, Clock, MapPin, Film, Armchair, CheckCircle2 } from 'lucide-react'
-import type { Movie, Screening, Booking } from '@/lib/api'
+import { type Movie, type Screening, type Booking, bookingsApi } from '@/lib/api'
+import { useAuthStore } from '@/lib/auth-store'
 
 interface TicketConfirmationProps {
   movie: Movie
@@ -40,6 +41,59 @@ export function TicketConfirmation({
   const qrData = useMemo(() => {
     return `CINELUX-${booking.booking_id!}-${Date.now()}`
   }, [booking.booking_id])
+
+  const { user } = useAuthStore()
+  const [isSending, setIsSending] = useState(false)
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [emailMessage, setEmailMessage] = useState('')
+
+  const handleSendEmail = async () => {
+    setIsSending(true)
+    setEmailStatus('idle')
+    setEmailMessage('')
+
+    const recipientEmail = user?.email || undefined;
+    const { data, error } = await bookingsApi.sendEmail(booking.booking_id!, recipientEmail)
+
+    if (error) {
+      setEmailStatus('error')
+      setEmailMessage(error)
+    } else {
+      setEmailStatus('success')
+      setEmailMessage(data?.previewUrl ? `¡Enviado! Puedes previsualizarlo aquí: ${data.previewUrl}` : '¡Ticket enviado al correo con éxito!')
+    }
+    setIsSending(false)
+  }
+
+  const handleDownload = () => {
+    const ticketText = `
+==================================================
+                   CINELUX TICKET
+==================================================
+Reserva: #${booking.booking_id!.toString().padStart(6, '0')}
+Película: ${movie.title}
+Director: ${movie.director}
+Duración: ${movie.duration} min
+Fecha: ${formattedDate.date}
+Hora: ${formattedDate.time}
+Sala: ${screening.room_number} (${screening.room_type})
+Asientos: ${seats.sort().join(', ')}
+Total pagado: $${totalAmount.toFixed(2)}
+Código de entrada: ${qrData}
+==================================================
+Presente este ticket en la entrada del cine.
+¡Disfrute de la función!
+==================================================
+`.trim();
+
+    const blob = new Blob([ticketText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ticket-cinelux-${booking.booking_id}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -177,13 +231,40 @@ export function TicketConfirmation({
         </div>
       </div>
 
+      {/* Email Status Message */}
+      {emailStatus !== 'idle' && (
+        <div className={`mt-4 p-3 rounded-lg text-sm text-center font-medium border ${
+          emailStatus === 'success' 
+            ? 'bg-green-500/10 border-green-500/30 text-green-400 font-semibold' 
+            : 'bg-destructive/10 border-destructive/30 text-destructive'
+        }`}>
+          {emailStatus === 'success' && emailMessage.includes('http') ? (
+            <span>
+              ¡Ticket enviado!{' '}
+              <a href={emailMessage.split('aquí: ')[1]} target="_blank" rel="noreferrer" className="underline hover:text-white font-bold ml-1">
+                Ver email (Ethereal inbox) 📬
+              </a>
+            </span>
+          ) : (
+            emailMessage
+          )}
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className="mt-6 flex gap-3">
-        <button className="flex-1 py-3 rounded-lg border border-border text-foreground font-medium hover:bg-secondary transition-colors">
+        <button 
+          onClick={handleDownload}
+          className="flex-1 py-3 rounded-lg border border-border text-foreground font-medium hover:bg-secondary transition-colors"
+        >
           Descargar Ticket
         </button>
-        <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
-          Enviar por Email
+        <button 
+          onClick={handleSendEmail}
+          disabled={isSending}
+          className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        >
+          {isSending ? 'Enviando...' : 'Enviar por Email'}
         </button>
       </div>
     </div>

@@ -24,6 +24,12 @@ router.post('/', authMiddleware, bookingController.createBooking);
 router.post('/assign-seats', authMiddleware, seatController.assignSeats);
 
 /**
+ * @route   POST /api/bookings/:id/send-email
+ * @desc    Enviar el ticket al correo del usuario
+ */
+router.post('/:id/send-email', authMiddleware, bookingController.sendTicketEmail);
+
+/**
  * @route   PATCH /api/bookings/:id/cancel
  * @desc    Cambiar estado de reserva a 'Cancelada'
  */
