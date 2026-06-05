@@ -23,7 +23,7 @@ export default function HomePage() {
     moviesApi.getAll()
       .then((data) => {
         console.log("Películas cargadas desde la BD:", data)
-        setMovies(data)
+        setMovies(data.data || [])
       })
       .catch((error) => {
         console.error("Error conectando con la API de películas:", error)

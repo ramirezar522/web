@@ -38,7 +38,7 @@ export function TicketConfirmation({
 
   // Generate mock QR data
   const qrData = useMemo(() => {
-    return `CINELUX-${booking.booking_id}-${Date.now()}`
+    return `CINELUX-${booking.booking_id!}-${Date.now()}`
   }, [booking.booking_id])
 
   return (
@@ -157,7 +157,7 @@ export function TicketConfirmation({
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Reserva</p>
               <p className="text-sm font-mono font-medium text-foreground">
-                #{booking.booking_id.toString().padStart(6, '0')}
+                #{booking.booking_id!.toString().padStart(6, '0')}
               </p>
             </div>
             <div className="text-right">

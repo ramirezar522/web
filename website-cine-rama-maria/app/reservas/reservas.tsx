@@ -120,8 +120,8 @@ export default function MyBookingsPage() {
     if (data) {
       // Fetch seats for each booking
       const bookingsWithSeats: BookingWithSeats[] = await Promise.all(
-        data.map(async (booking) => {
-          const { data: seats } = await seatsApi.getByBooking(booking.booking_id)
+        data.map(async (booking: Booking) => {
+          const { data: seats } = await seatsApi.getByBooking(booking.booking_id!)
           return { ...booking, seats: seats || [] }
         })
       )
@@ -346,7 +346,7 @@ export default function MyBookingsPage() {
                             <QrCode className="w-full h-full text-cinema-dark" />
                           </div>
                           <button
-                            onClick={() => handleCancelBooking(booking.booking_id)}
+                            onClick={() => handleCancelBooking(booking.booking_id!)}
                             className="text-sm text-destructive hover:text-destructive/80 transition-colors"
                           >
                             Cancelar reserva
@@ -359,7 +359,7 @@ export default function MyBookingsPage() {
                   {/* Booking metadata */}
                   <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
                     <span>
-                      Reservado el {formatDate(booking.created_at)}
+                      Reservado el {formatDate(booking.created_at!)}
                     </span>
                     {booking.staff_name && (
                       <span>
