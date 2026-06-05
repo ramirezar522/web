@@ -46,6 +46,11 @@ export interface Booking {
   staff_name?: string;
   seat_ids?: string[] | number[];
   status?: string;
+  movie_id?: number;
+  director?: string;
+  duration?: number;
+  poster_url?: string;
+  genre_name?: string;
 }
 
 export interface Room {
@@ -130,6 +135,23 @@ function normalizeResponse<T>(raw: any): { data: T; error?: string | null } {
   }
   // Si es un array directo (como movies, genres, etc.)
   return { data: raw as T, error: null };
+}
+
+// Helper para obtener el token desde localStorage, buscando también en el persist de zustand
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const directToken = localStorage.getItem('token');
+  if (directToken) return directToken;
+  try {
+    const authStoreStr = localStorage.getItem('cinelux-auth');
+    if (authStoreStr) {
+      const parsed = JSON.parse(authStoreStr);
+      return parsed.state?.token || null;
+    }
+  } catch (e) {
+    console.error('Error reading token from cinelux-auth', e);
+  }
+  return null;
 }
 
 // --- 2. OBJETOS DE LA API (Hacia tus endpoints en plural del Backend) ---
@@ -244,7 +266,7 @@ export const seatsApi = {
   },
   assign: async (payload: { booking_id?: number; seats: string[] }): Promise<any> => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -271,7 +293,7 @@ export const seatsApi = {
 export const bookingsApi = {
   getAll: async (): Promise<{ data: Booking[]; error?: string | null }> => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -288,7 +310,7 @@ export const bookingsApi = {
   },
   getById: async (id: number): Promise<{ data: Booking; error?: string | null }> => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -305,7 +327,7 @@ export const bookingsApi = {
   },
   create: async (bookingData: Booking): Promise<{ data: Booking; error?: string | null }> => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -326,7 +348,7 @@ export const bookingsApi = {
   },
   cancel: async (id: number): Promise<{ data: any; error?: string | null }> => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = getToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };

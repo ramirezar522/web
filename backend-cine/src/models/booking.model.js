@@ -7,7 +7,12 @@ const Booking = {
             SELECT 
                 b.booking_id, b.created_at, b.booking_status,
                 c.first_name || ' ' || c.last_name as customer_name,
+                m.movie_id,
                 m.title as movie_title,
+                m.director,
+                m.duration,
+                m.poster_url,
+                m.genre as genre_name,
                 s.date_time as screening_time,
                 u.first_name as staff_name
             FROM bookings b

@@ -60,12 +60,12 @@ CREATE TABLE IF NOT EXISTS movies (
 
 -- Seed Movies
 INSERT INTO movies (movie_id, id, title, director, duration, poster_url, status, genre_id, genre) VALUES
-(1, 1, 'Dune: Parte Dos', 'Denis Villeneuve', 166, 'https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nez7S.jpg', 'Activa', 5, 'Ciencia Ficción'),
+(1, 1, 'Dune: Parte Dos', 'Denis Villeneuve', 166, 'https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg', 'Activa', 5, 'Ciencia Ficción'),
 (2, 2, 'Oppenheimer', 'Christopher Nolan', 180, 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', 'Activa', 2, 'Drama'),
 (3, 3, 'Spider-Man: Across the Spider-Verse', 'Joaquim Dos Santos', 140, 'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', 'Activa', 7, 'Animación'),
 (4, 4, 'John Wick 4', 'Chad Stahelski', 169, 'https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg', 'Activa', 1, 'Acción'),
 (5, 5, 'Barbie', 'Greta Gerwig', 114, 'https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg', 'Activa', 3, 'Comedia'),
-(6, 6, 'The Conjuring 4', 'James Wan', 112, 'https://image.tmdb.org/t/p/w500/jVbHMsbnMAvi1fOFijdHqKSVGtn.jpg', 'Activa', 4, 'Terror')
+(6, 6, 'The Conjuring 4', 'James Wan', 112, 'https://image.tmdb.org/t/p/w500/xbSuFiJbbBWCkyCCKIMfuDCA4yV.jpg', 'Activa', 4, 'Terror')
 ON CONFLICT (movie_id) DO NOTHING;
 
 -- 5. Rooms table

@@ -17,8 +17,9 @@ import {
   Loader2
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
-import { bookingsApi, seatsApi, type Booking, type SeatAssignment } from '@/lib/api'
+import { bookingsApi, seatsApi, type Booking, type SeatAssignment, type Movie } from '@/lib/api'
 import { Navbar } from '@/components/navbar'
+import { MovieDetailsModal } from '@/components/moviedetails-modal'
 
 // Extended booking with seats for display
 interface BookingWithSeats extends Booking {
@@ -41,7 +42,12 @@ const mockBookings: BookingWithSeats[] = [
     seats: [
       { assignment_id: 1, seat_number: 'C4', booking_id: 1001 },
       { assignment_id: 2, seat_number: 'C5', booking_id: 1001 },
-    ]
+    ],
+    movie_id: 1,
+    director: 'Denis Villeneuve',
+    duration: 166,
+    poster_url: 'https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg',
+    genre_name: 'Ciencia Ficción'
   },
   {
     booking_id: 1002,
@@ -56,7 +62,12 @@ const mockBookings: BookingWithSeats[] = [
     staff_name: 'Admin',
     seats: [
       { assignment_id: 3, seat_number: 'D6', booking_id: 1002 },
-    ]
+    ],
+    movie_id: 2,
+    director: 'Christopher Nolan',
+    duration: 180,
+    poster_url: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
+    genre_name: 'Drama'
   },
   {
     booking_id: 1003,
@@ -73,7 +84,12 @@ const mockBookings: BookingWithSeats[] = [
       { assignment_id: 4, seat_number: 'A1', booking_id: 1003 },
       { assignment_id: 5, seat_number: 'A2', booking_id: 1003 },
       { assignment_id: 6, seat_number: 'A3', booking_id: 1003 },
-    ]
+    ],
+    movie_id: 4,
+    director: 'Chad Stahelski',
+    duration: 169,
+    poster_url: 'https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg',
+    genre_name: 'Acción'
   },
 ]
 
@@ -84,6 +100,24 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<BookingWithSeats[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+
+  const handleOpenMovieDetails = (booking: BookingWithSeats) => {
+    const movieObj: Movie = {
+      movie_id: booking.movie_id || 0,
+      title: booking.movie_title || '',
+      director: booking.director || 'N/A',
+      duration: booking.duration || 0,
+      poster_url: booking.poster_url || '/placeholder.jpg',
+      status: 'Activa',
+      genre_id: 0,
+      genre_name: booking.genre_name || 'Drama',
+    }
+    setSelectedMovie(movieObj)
+    setIsDetailsOpen(true)
+  }
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -263,6 +297,20 @@ export default function MyBookingsPage() {
                   `}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                    {/* Movie Poster */}
+                    {booking.poster_url && (
+                      <div 
+                        onClick={() => handleOpenMovieDetails(booking)}
+                        className="w-20 h-28 relative rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-85 transition-opacity border border-border bg-secondary"
+                      >
+                        <img 
+                          src={booking.poster_url} 
+                          alt={booking.movie_title} 
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    )}
+
                     {/* Movie info */}
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-4">
@@ -284,9 +332,18 @@ export default function MyBookingsPage() {
                               </span>
                             )}
                           </div>
-                          <h3 className="font-serif text-xl font-bold text-foreground">
+                          <h3 
+                            onClick={() => handleOpenMovieDetails(booking)}
+                            className="font-serif text-xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
+                          >
                             {booking.movie_title}
                           </h3>
+                          <button
+                            onClick={() => handleOpenMovieDetails(booking)}
+                            className="text-xs text-primary hover:underline mt-1 block font-medium"
+                          >
+                            Ver información de la película
+                          </button>
                         </div>
                         <span className="text-sm text-muted-foreground">
                           #{booking.booking_id}
@@ -373,6 +430,15 @@ export default function MyBookingsPage() {
           </div>
         )}
       </main>
+
+      {selectedMovie && (
+        <MovieDetailsModal
+          movie={selectedMovie}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+          onBook={() => setIsDetailsOpen(false)}
+        />
+      )}
     </div>
   )
 }

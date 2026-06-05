@@ -13,7 +13,7 @@ router.post('/update-posters', async (req, res) => {
             {
                 movie_id: 1,
                 title: 'Dune: Parte Dos',
-                poster_url: 'https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nez7S.jpg'
+                poster_url: 'https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg'
             },
             {
                 movie_id: 2,
@@ -38,7 +38,7 @@ router.post('/update-posters', async (req, res) => {
             {
                 movie_id: 6,
                 title: 'The Conjuring 4',
-                poster_url: 'https://image.tmdb.org/t/p/w500/jVbHMsbnMAvi1fOFijdHqKSVGtn.jpg'
+                poster_url: 'https://image.tmdb.org/t/p/w500/xbSuFiJbbBWCkyCCKIMfuDCA4yV.jpg'
             }
         ];
 
