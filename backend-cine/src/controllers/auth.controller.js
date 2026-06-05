@@ -49,7 +49,7 @@ export const register = async (req, res) => {
 
     } catch (error) {
         console.error('Error en el registro:', error);
-        return errorResponse(res, 'Error interno al intentar registrar el usuario');
+        return errorResponse(res, 'Error interno: ' + error.message);
     }
 };
 
