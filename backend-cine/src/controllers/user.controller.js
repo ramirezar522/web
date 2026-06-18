@@ -1,6 +1,7 @@
 import { User } from '../models/user.model.js';
 import { encrypt } from '../../utils/password.handle.js';
 import { successResponse, errorResponse } from '../../utils/response.handle.js';
+import { verifyEmailDomain } from '../../utils/email.validator.js';
 
 export const getUsers = async (req, res) => {
     try {
@@ -13,13 +14,20 @@ export const getUsers = async (req, res) => {
 
 export const createUser = async (req, res) => {
     try {
-        const { password, ...userData } = req.body;
+        const { password, email, ...userData } = req.body;
+        
+        // Verificar si el correo es real
+        const isRealEmail = await verifyEmailDomain(email);
+        if (!isRealEmail) {
+            return errorResponse(res, 'El correo electrónico proporcionado no es un correo real o no puede recibir mensajes.', 400);
+        }
         
         // Encriptación de la contraseña antes de ir a la DB
         const hashedPassword = await encrypt(password);
         
         const newUser = await User.create({
             ...userData,
+            email,
             password: hashedPassword
         });
 

@@ -1,6 +1,7 @@
 import Booking from '../models/booking.model.js';
 import db from '../config/db.js';
 import { sendTicketEmail as sendEmailUtil } from '../../utils/mailer.hadle.js';
+import { verifyEmailDomain } from '../../utils/email.validator.js';
 
 export const getAllBookings = async (req, res) => {
     try {
@@ -70,7 +71,23 @@ export const sendTicketEmail = async (req, res) => {
         const seatsList = seatRows.map(r => r.seat_number).sort().join(', ');
 
         // 3. Determinar email de envío
-        const recipientEmail = email || req.user.email;
+        let recipientEmail = email;
+        if (!recipientEmail && req.user && req.user.id) {
+            const userRow = await db.query('SELECT email FROM users WHERE user_id = $1', [req.user.id]);
+            if (userRow.rows.length > 0) {
+                recipientEmail = userRow.rows[0].email;
+            }
+        }
+
+        if (!recipientEmail) {
+            return res.status(400).json({ message: "No se proporcionó correo de destino ni se encontró en la cuenta registrada." });
+        }
+
+        // Verificar si el correo es real
+        const isRealEmail = await verifyEmailDomain(recipientEmail);
+        if (!isRealEmail) {
+            return res.status(400).json({ message: "El correo electrónico de destino no es válido o no existe." });
+        }
 
         // 4. Calcular monto total
         const ticketPrices = { '2D': 8, '3D': 10, 'VIP': 15 };

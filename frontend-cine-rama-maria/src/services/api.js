@@ -260,7 +260,7 @@ export const bookingsApi = {
 
   // PATCH /api/bookings/:id/cancel
   cancel: async (id) => {
-    return await apiRequest(`/bookings/${id}/cancel', {
+    return await apiRequest(`/bookings/${id}/cancel`, {
       method: 'PATCH'
     });
   }

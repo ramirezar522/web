@@ -4,6 +4,7 @@ import { encrypt, verified } from '../../utils/password.handle.js';
 import { generateToken } from '../../utils/jwt.handle.js';
 import { successResponse, errorResponse } from '../../utils/response.handle.js';
 import { sendRecoveryEmail } from '../../utils/mailer.hadle.js';
+import { verifyEmailDomain } from '../../utils/email.validator.js';
 
 /**
  * Lógica de Registro de Usuarios
@@ -12,7 +13,13 @@ export const register = async (req, res) => {
     try {
         const { first_name, last_name, email, password, role_id } = req.body;
 
-        // 1. Verificar si el usuario ya existe para evitar duplicados
+        // 1. Verificar si el correo es real (tiene dominio con registros MX)
+        const isRealEmail = await verifyEmailDomain(email);
+        if (!isRealEmail) {
+            return errorResponse(res, 'El correo electrónico proporcionado no es un correo real o no puede recibir mensajes.', 400);
+        }
+
+        // 2. Verificar si el usuario ya existe para evitar duplicados
         const existingUser = await User.findByEmail(email);
         if (existingUser) {
             return errorResponse(res, 'El correo electrónico ya está registrado', 400);
@@ -35,7 +42,8 @@ export const register = async (req, res) => {
         // 4. (Opcional) Generar token para que el usuario entre directamente
         const token = generateToken({
             user_id: newUser.user_id,
-            role_name: 'Empleado' // O el nombre del rol según el role_id
+            role_name: 'Empleado', // O el nombre del rol según el role_id
+            email: newUser.email
         });
 
         return successResponse(res, 'Registro exitoso', {
@@ -88,6 +96,7 @@ export const login = async (req, res) => {
             user: {
                 id: user.user_id,
                 name: `${user.first_name} ${user.last_name}`,
+                email: user.email,
                 role: user.role_name
             },
             token

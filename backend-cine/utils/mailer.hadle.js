@@ -1,50 +1,50 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
+    service: 'gmail',
     auth: {
-        user: 'karelle5@ethereal.email',
-        pass: 'J4AZCc4c6GkXwFTrfj'
-    },
-    connectionTimeout: 3000, // 3 seconds timeout
-    greetingTimeout: 3000,
-    socketTimeout: 5000
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
 });
 
 export const sendRecoveryEmail = async (userEmail, newPassword) => {
     try {
-        // 1. Definir el cuerpo del correo
-    const mailOptions = {
-        from: '"Sistema de Cine - Promo XXXIII" <test@ethereal.email>', // Texto fijo para evitar errores de sintaxis
-        to: userEmail,
-        subject: 'Recuperación de Contraseña',
-        html: `
-            <div style="font-family: sans-serif; padding: 20px;">
-                <h2>Hola, hemos restablecido tu acceso</h2>
-                <p>Tu nueva contraseña temporal es: <strong>${newPassword}</strong></p>
-                <p>Por favor, cámbiala al iniciar sesión.</p>
-            </div>
-        `
-    };
+        // Verify that credentials exist before trying to send
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            throw new Error("Gmail credentials (EMAIL_USER/EMAIL_PASS) are not configured in backend .env");
+        }
 
-        // 2. Enviar el correo
+        const mailOptions = {
+            from: `"CineLux" <${process.env.EMAIL_USER}>`,
+            to: userEmail,
+            subject: 'Recuperación de Contraseña',
+            html: `
+                <div style="font-family: sans-serif; padding: 20px;">
+                    <h2>Hola, hemos restablecido tu acceso</h2>
+                    <p>Tu nueva contraseña temporal es: <strong>${newPassword}</strong></p>
+                    <p>Por favor, cámbiala al iniciar sesión.</p>
+                </div>
+            `
+        };
+
         const info = await transporter.sendMail(mailOptions);
-        
-        // 3. Ver el resultado en la consola (para previsualizar en Ethereal)
-        console.log("Correo enviado con éxito.");
-        console.log("Previsualiza el mensaje aquí: %s", nodemailer.getTestMessageUrl(info));
-        
+        console.log("Correo de recuperación enviado con éxito a:", userEmail);
+        return true;
     } catch (error) {
-        console.error("Error al enviar el correo:", error);
-        throw error; // Re-lanzamos el error para que el controlador lo atrape
+        console.error("Error al enviar el correo de recuperación:", error);
+        throw error;
     }
 };
 
 export const sendTicketEmail = async (userEmail, bookingDetails) => {
     try {
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            throw new Error("Gmail credentials (EMAIL_USER/EMAIL_PASS) are not configured in backend .env");
+        }
+
         const mailOptions = {
-            from: '"CineLux - Tu Ticket" <test@ethereal.email>',
+            from: `"CineLux - Tu Ticket" <${process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: `CineLux - Ticket de Reserva #${bookingDetails.booking_id}`,
             html: `
@@ -76,16 +76,10 @@ export const sendTicketEmail = async (userEmail, bookingDetails) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        const previewUrl = nodemailer.getTestMessageUrl(info);
         console.log("Ticket enviado con éxito a:", userEmail);
-        console.log("Previsualiza el ticket aquí: %s", previewUrl);
-        return previewUrl;
+        return null; // Return null so frontend displays the standard "¡Ticket enviado con éxito!" success message instead of the preview URL
     } catch (error) {
         console.error("Error al enviar el ticket por correo:", error);
-        // Generar un preview URL simulado si hay bloqueo de puertos o timeout
-        const mockMsgId = Math.random().toString(36).substring(2, 15);
-        const mockPreviewUrl = `https://ethereal.email/message/${mockMsgId}`;
-        console.log("Generando enlace simulado por error/timeout de SMTP:", mockPreviewUrl);
-        return mockPreviewUrl;
+        throw error;
     }
 };
