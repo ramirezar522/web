@@ -1,9 +1,81 @@
 import Movie from '../models/movie.model.js';
+import db from '../config/db.js';
 
 export const getAllMovies = async (req, res) => {
     try {
-        const movies = await Movie.findAll();
-        res.json(movies);
+        const page = parseInt(req.query.page, 10);
+        const limit = parseInt(req.query.limit, 10);
+        const genreId = req.query.genre_id ? parseInt(req.query.genre_id, 10) : null;
+        const status = req.query.status;
+        const search = req.query.search;
+        
+        let queryStr = `
+            SELECT m.*, g.name as genre_name 
+            FROM movies m
+            LEFT JOIN genres g ON m.genre_id = g.genre_id
+            WHERE 1=1`;
+        
+        let countQueryStr = `
+            SELECT COUNT(*) 
+            FROM movies m
+            LEFT JOIN genres g ON m.genre_id = g.genre_id
+            WHERE 1=1`;
+            
+        const queryParams = [];
+        let paramCount = 0;
+        
+        if (genreId) {
+            paramCount++;
+            queryStr += ` AND m.genre_id = $${paramCount}`;
+            countQueryStr += ` AND m.genre_id = $${paramCount}`;
+            queryParams.push(genreId);
+        }
+        
+        if (status && status !== 'todos') {
+            paramCount++;
+            queryStr += ` AND m.status = $${paramCount}`;
+            countQueryStr += ` AND m.status = $${paramCount}`;
+            queryParams.push(status);
+        }
+        
+        if (search) {
+            paramCount++;
+            queryStr += ` AND (m.title ILIKE $${paramCount} OR m.director ILIKE $${paramCount})`;
+            countQueryStr += ` AND (m.title ILIKE $${paramCount} OR m.director ILIKE $${paramCount})`;
+            queryParams.push(`%${search}%`);
+        }
+        
+        queryStr += ` ORDER BY m.title ASC`;
+        
+        const countRes = await db.query(countQueryStr, queryParams);
+        const total = parseInt(countRes.rows[0].count, 10);
+        
+        if (page && limit) {
+            const offset = (page - 1) * limit;
+            paramCount++;
+            queryStr += ` LIMIT $${paramCount}`;
+            queryParams.push(limit);
+            
+            paramCount++;
+            queryStr += ` OFFSET $${paramCount}`;
+            queryParams.push(offset);
+        }
+        
+        const { rows } = await db.query(queryStr, queryParams);
+        
+        if (page && limit) {
+            return res.json({
+                data: rows,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            });
+        }
+        
+        res.json(rows);
     } catch (error) {
         res.status(500).json({ error: "Error al obtener películas: " + error.message });
     }

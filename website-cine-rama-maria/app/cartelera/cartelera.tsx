@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/navbar'
 import { MovieCard } from '@/components/movie-card'
 import { BookingModal } from '@/components/booking-modal'
@@ -21,53 +21,73 @@ export default function BillboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch movies and genres on mount
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const [limit] = useState(8)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  // Fetch movies whenever filters/page change
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchMovies = async () => {
       setIsLoading(true)
       setError(null)
-
-      // GET /api/movies (PUBLIC)
-      const { data: moviesData, error: moviesError } = await moviesApi.getAll()
-      
-      // GET /api/genres (PUBLIC)
-      const { data: genresData, error: genresError } = await genresApi.getAll()
+      const { data: moviesData, error: moviesError, pagination } = await moviesApi.getAll({
+        page,
+        limit,
+        genre_id: selectedGenre,
+        search: searchQuery || undefined,
+        status: 'Activa'
+      })
 
       if (moviesError || !moviesData) {
-        // Fallback to mock data
         if (!process.env.NEXT_PUBLIC_API_URL) {
-          setMovies(mockMovies)
-          setGenres(mockGenres)
+          // Fallback local filtering
+          const filtered = mockMovies.filter(movie => {
+            if (movie.status !== 'Activa') return false
+            const matchesSearch = movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                movie.director.toLowerCase().includes(searchQuery.toLowerCase())
+            const matchesGenre = selectedGenre === null || movie.genre_id === selectedGenre
+            return matchesSearch && matchesGenre
+          })
+          setMovies(filtered.slice((page - 1) * limit, page * limit))
+          setTotal(filtered.length)
+          setTotalPages(Math.ceil(filtered.length / limit) || 1)
         } else {
           setError(moviesError || 'Error al cargar películas')
         }
       } else {
         setMovies(moviesData)
-        setGenres(genresData || mockGenres)
+        if (pagination) {
+          setTotal(pagination.total)
+          setTotalPages(pagination.totalPages)
+        } else {
+          setTotal(moviesData.length)
+          setTotalPages(1)
+        }
       }
-
       setIsLoading(false)
     }
 
-    fetchData()
-  }, [])
+    const delayDebounce = setTimeout(() => {
+      fetchMovies()
+    }, searchQuery ? 305 : 0)
 
-  // Filter movies based on search and genre
-  const filteredMovies = useMemo(() => {
-    return movies.filter(movie => {
-      // Only show active movies
-      if (movie.status !== 'Activa') return false
-      
-      // Search filter
-      const matchesSearch = movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          movie.director.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      // Genre filter
-      const matchesGenre = selectedGenre === null || movie.genre_id === selectedGenre
-      
-      return matchesSearch && matchesGenre
-    })
-  }, [movies, searchQuery, selectedGenre])
+    return () => clearTimeout(delayDebounce)
+  }, [page, selectedGenre, searchQuery])
+
+  // Genres only fetch on mount
+  useEffect(() => {
+    const fetchGenres = async () => {
+      const { data: genresData } = await genresApi.getAll()
+      if (genresData && genresData.length > 0) {
+        setGenres(genresData)
+      } else {
+        setGenres(mockGenres)
+      }
+    }
+    fetchGenres()
+  }, [])
 
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie)
@@ -77,6 +97,7 @@ export default function BillboardPage() {
   const clearFilters = () => {
     setSearchQuery('')
     setSelectedGenre(null)
+    setPage(1)
   }
 
   return (
@@ -111,7 +132,10 @@ export default function BillboardPage() {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setPage(1)
+                  }}
                   placeholder="Buscar películas o directores..."
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
@@ -154,7 +178,7 @@ export default function BillboardPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setSelectedGenre(null)}
+                    onClick={() => { setSelectedGenre(null); setPage(1); }}
                     className={`
                       px-4 py-2 rounded-full text-sm font-medium transition-all
                       ${selectedGenre === null 
@@ -168,7 +192,7 @@ export default function BillboardPage() {
                   {genres.map(genre => (
                     <button
                       key={genre.genre_id}
-                      onClick={() => setSelectedGenre(genre.genre_id)}
+                      onClick={() => { setSelectedGenre(genre.genre_id); setPage(1); }}
                       className={`
                         px-4 py-2 rounded-full text-sm font-medium transition-all
                         ${selectedGenre === genre.genre_id 
@@ -198,16 +222,16 @@ export default function BillboardPage() {
               {/* Results count */}
               <div className="mb-6">
                 <p className="text-sm text-muted-foreground">
-                  Mostrando {filteredMovies.length} {filteredMovies.length === 1 ? 'película' : 'películas'}
+                  Mostrando {movies.length} {movies.length === 1 ? 'película' : 'películas'}
                   {searchQuery && ` para "${searchQuery}"`}
                   {selectedGenre && ` en ${genres.find(g => g.genre_id === selectedGenre)?.name}`}
                 </p>
               </div>
 
               {/* Movie grid */}
-              {filteredMovies.length > 0 ? (
+              {movies.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredMovies.map(movie => (
+                  {movies.map(movie => (
                     <MovieCard 
                       key={movie.movie_id} 
                       movie={movie} 
@@ -232,6 +256,31 @@ export default function BillboardPage() {
                   >
                     Limpiar filtros
                   </button>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-8 border-t border-border/60 text-muted-foreground mt-8">
+                  <p className="text-sm">
+                    Mostrando página <span className="font-semibold text-foreground">{page}</span> de <span className="font-semibold text-foreground">{totalPages}</span> ({total} películas en total)
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(p - 1, 1))}
+                      disabled={page === 1}
+                      className="px-4 py-2 bg-secondary border border-border rounded-xl hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-colors text-sm font-medium"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+                      disabled={page === totalPages}
+                      className="px-4 py-2 bg-secondary border border-border rounded-xl hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-colors text-sm font-medium"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
                 </div>
               )}
             </>

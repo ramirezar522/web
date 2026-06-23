@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getUsers, createUser } from '../controllers/user.controller.js';
+import { getUsers, createUser, updateUser, deleteUser } from '../controllers/user.controller.js';
 import { authMiddleware, isGerente } from '../middlewares/auth.js';
 import { validateUser } from '../middlewares/user.validator.js';
 import userSchema from '../schemas/user.schema.js';
@@ -16,5 +16,11 @@ router.get('/', authMiddleware, isGerente, getUsers);
 
 // Registrar un nuevo usuario (con validación de esquema Zod)
 router.post('/', authMiddleware, isGerente, validateUser, createUser);
+
+// Actualizar un usuario
+router.put('/:id', authMiddleware, isGerente, validateUser, updateUser);
+
+// Eliminar un usuario
+router.delete('/:id', authMiddleware, isGerente, deleteUser);
 
 export default router;

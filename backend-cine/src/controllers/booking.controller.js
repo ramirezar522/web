@@ -5,8 +5,88 @@ import { verifyEmailDomain } from '../../utils/email.validator.js';
 
 export const getAllBookings = async (req, res) => {
     try {
-        const bookings = await Booking.findAll();
-        res.json(bookings);
+        const page = parseInt(req.query.page, 10);
+        const limit = parseInt(req.query.limit, 10);
+        const status = req.query.status;
+        const search = req.query.search;
+        
+        let queryStr = `
+            SELECT 
+                b.booking_id, b.created_at, b.booking_status,
+                c.first_name || ' ' || c.last_name as customer_name,
+                c.email as customer_email,
+                m.movie_id,
+                m.title as movie_title,
+                m.director,
+                m.duration,
+                m.poster_url,
+                m.genre as genre_name,
+                s.date_time as screening_time,
+                u.first_name as staff_name
+            FROM bookings b
+            JOIN customers c ON b.customer_id = c.customer_id
+            JOIN screenings s ON b.screening_id = s.screening_id
+            JOIN movies m ON s.movie_id = m.movie_id
+            JOIN users u ON b.user_id = u.user_id
+            WHERE 1=1`;
+        
+        let countQueryStr = `
+            SELECT COUNT(*) 
+            FROM bookings b
+            JOIN customers c ON b.customer_id = c.customer_id
+            JOIN screenings s ON b.screening_id = s.screening_id
+            JOIN movies m ON s.movie_id = m.movie_id
+            JOIN users u ON b.user_id = u.user_id
+            WHERE 1=1`;
+            
+        const queryParams = [];
+        let paramCount = 0;
+        
+        if (status && status !== 'todos') {
+            paramCount++;
+            queryStr += ` AND b.booking_status = $${paramCount}`;
+            countQueryStr += ` AND b.booking_status = $${paramCount}`;
+            queryParams.push(status);
+        }
+        
+        if (search) {
+            paramCount++;
+            queryStr += ` AND (c.first_name ILIKE $${paramCount} OR c.last_name ILIKE $${paramCount} OR m.title ILIKE $${paramCount})`;
+            countQueryStr += ` AND (c.first_name ILIKE $${paramCount} OR c.last_name ILIKE $${paramCount} OR m.title ILIKE $${paramCount})`;
+            queryParams.push(`%${search}%`);
+        }
+        
+        queryStr += ` ORDER BY b.created_at DESC`;
+        
+        const countRes = await db.query(countQueryStr, queryParams);
+        const total = parseInt(countRes.rows[0].count, 10);
+        
+        if (page && limit) {
+            const offset = (page - 1) * limit;
+            paramCount++;
+            queryStr += ` LIMIT $${paramCount}`;
+            queryParams.push(limit);
+            
+            paramCount++;
+            queryStr += ` OFFSET $${paramCount}`;
+            queryParams.push(offset);
+        }
+        
+        const { rows } = await db.query(queryStr, queryParams);
+        
+        if (page && limit) {
+            return res.json({
+                data: rows,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            });
+        }
+        
+        res.json(rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -52,6 +52,22 @@ export const User = {
             WHERE user_id = $2
         `;
         await query(text, [newHashedPassword, user_id]);
+    },
+
+    update: async (id, { first_name, last_name, email, role_id, status }) => {
+        const text = `
+            UPDATE users 
+            SET first_name = $1, last_name = $2, email = $3, role_id = $4, status = $5
+            WHERE user_id = $6 
+            RETURNING user_id, first_name, last_name, email, role_id, status
+        `;
+        const result = await query(text, [first_name, last_name, email, role_id, status, id]);
+        return result.rows[0];
+    },
+
+    delete: async (id) => {
+        await query('DELETE FROM users WHERE user_id = $1', [id]);
+        return true;
     }
 
 };

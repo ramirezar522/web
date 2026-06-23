@@ -44,6 +44,11 @@ const Product = {
         const values = [name, min_stock, category_id, id];
         const { rows } = await db.query(query, values);
         return rows[0];
+    },
+
+    delete: async (id) => {
+        await db.query('DELETE FROM products WHERE product_id = $1', [id]);
+        return true;
     }
 };
 

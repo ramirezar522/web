@@ -59,4 +59,61 @@ router.post('/update-posters', async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /api/admin/dashboard-stats
+ * @desc    Fetch real dashboard metrics (active bookings, movies playing, available rooms, revenue)
+ */
+router.get('/dashboard-stats', async (req, res) => {
+    try {
+        const bookingsCount = await db.query("SELECT COUNT(*) FROM bookings WHERE booking_status = 'Confirmada'");
+        const moviesCount = await db.query("SELECT COUNT(*) FROM movies WHERE status = 'Activa'");
+        const roomsCount = await db.query("SELECT COUNT(*) FROM rooms WHERE room_status = 'Disponible'");
+        
+        // Calculate revenue
+        const revenueQuery = `
+            SELECT r.room_type, COUNT(sa.assignment_id) as seats_count
+            FROM seat_assignments sa
+            JOIN bookings b ON sa.booking_id = b.booking_id
+            JOIN screenings s ON b.screening_id = s.screening_id
+            JOIN rooms r ON s.room_id = r.room_id
+            WHERE b.booking_status = 'Confirmada'
+            GROUP BY r.room_type`;
+        const revenueRes = await db.query(revenueQuery);
+        
+        const prices = { '2D': 8, '3D': 10, 'VIP': 15 };
+        let totalRevenue = 0;
+        for (const row of revenueRes.rows) {
+            const price = prices[row.room_type] || 8;
+            totalRevenue += parseInt(row.seats_count, 10) * price;
+        }
+
+        // Today sales
+        const todayRevenueQuery = `
+            SELECT r.room_type, COUNT(sa.assignment_id) as seats_count
+            FROM seat_assignments sa
+            JOIN bookings b ON sa.booking_id = b.booking_id
+            JOIN screenings s ON b.screening_id = s.screening_id
+            JOIN rooms r ON s.room_id = r.room_id
+            WHERE b.booking_status = 'Confirmada' AND b.created_at >= CURRENT_DATE
+            GROUP BY r.room_type`;
+        const todayRevenueRes = await db.query(todayRevenueQuery);
+        let todaySales = 0;
+        for (const row of todayRevenueRes.rows) {
+            const price = prices[row.room_type] || 8;
+            todaySales += parseInt(row.seats_count, 10) * price;
+        }
+
+        res.json({
+            activeBookings: parseInt(bookingsCount.rows[0].count, 10),
+            moviesPlaying: parseInt(moviesCount.rows[0].count, 10),
+            availableRooms: parseInt(roomsCount.rows[0].count, 10),
+            totalRevenue,
+            todaySales
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;

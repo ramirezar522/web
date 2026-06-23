@@ -1,8 +1,9 @@
-export const successResponse = (res, message, data = {}, statusCode = 200) => {
+export const successResponse = (res, message, data = {}, statusCode = 200, pagination = null) => {
     return res.status(statusCode).json({
         success: true,
         message,
-        data
+        data,
+        ...(pagination && { pagination })
     });
 };
 

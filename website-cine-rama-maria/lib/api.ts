@@ -158,12 +158,29 @@ function getToken(): string | null {
 
 // Módulo de Cine y Cartelera
 export const moviesApi = {
-  getAll: async (): Promise<{ data: Movie[]; error?: string | null }> => {
+  getAll: async (params?: { page?: number; limit?: number; genre_id?: number | null; search?: string; status?: string }): Promise<{ data: Movie[]; error?: string | null; pagination?: any }> => {
     try {
-      const response = await fetch(`${BASE_URL}/movies`);
+      const query = new URLSearchParams();
+      if (params) {
+        if (params.page) query.append('page', params.page.toString());
+        if (params.limit) query.append('limit', params.limit.toString());
+        if (params.genre_id !== undefined && params.genre_id !== null) query.append('genre_id', params.genre_id.toString());
+        if (params.search) query.append('search', params.search);
+        if (params.status) query.append('status', params.status);
+      }
+      const queryString = query.toString() ? `?${query.toString()}` : '';
+      const response = await fetch(`${BASE_URL}/movies${queryString}`);
       if (!response.ok) throw new Error('Error al cargar películas');
       const raw = await response.json();
-      return normalizeResponse<Movie[]>(raw);
+      
+      if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in raw) {
+        return {
+          data: raw.data as Movie[],
+          error: raw.error || null,
+          pagination: raw.pagination || null
+        };
+      }
+      return { data: raw as Movie[], error: null };
     } catch (err: any) {
       return { data: [], error: err.message };
     }

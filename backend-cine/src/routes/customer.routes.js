@@ -36,4 +36,14 @@ router.put('/:id',
     customerController.updateCustomer
 );
 
+/**
+ * @route   DELETE /api/customers/:id
+ * @desc    ELIMINACIÓN: Eliminar un cliente (Gerente)
+ */
+router.delete('/:id',
+    authMiddleware,
+    isGerente,
+    customerController.deleteCustomer
+);
+
 export default router;

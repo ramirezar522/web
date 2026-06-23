@@ -36,6 +36,11 @@ const Customer = {
         const values = [first_name, last_name, cedula, phone, email, id];
         const { rows } = await db.query(query, values);
         return rows[0];
+    },
+
+    delete: async (id) => {
+        await db.query('DELETE FROM customers WHERE customer_id = $1', [id]);
+        return true;
     }
 };
 
