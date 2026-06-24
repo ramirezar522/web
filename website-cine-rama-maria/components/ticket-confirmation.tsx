@@ -37,10 +37,16 @@ export function TicketConfirmation({
     }
   }, [screening.date_time])
 
-  // Generate mock QR data
+  // Generate real QR data with ticket details
   const qrData = useMemo(() => {
-    return `CINELUX-${booking.booking_id!}-${Date.now()}`
-  }, [booking.booking_id])
+    return `Reserva: #${booking.booking_id}
+Pelicula: ${movie.title}
+Fecha: ${formattedDate.date}
+Hora: ${formattedDate.time}
+Sala: ${screening.room_number} (${screening.room_type})
+Asientos: ${seats.sort().join(', ')}
+Total: $${totalAmount.toFixed(2)}`.trim();
+  }, [booking.booking_id, movie.title, formattedDate, screening, seats, totalAmount])
 
   const { user } = useAuthStore()
   const [isSending, setIsSending] = useState(false)
@@ -187,20 +193,27 @@ Presente este ticket en la entrada del cine.
                   Código de entrada
                 </p>
                 
-                {/* Mock QR Code */}
-                <div className="w-36 h-36 p-2 bg-white rounded-lg mb-4">
-                  <div className="w-full h-full grid grid-cols-8 gap-0.5">
-                    {Array.from({ length: 64 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`rounded-sm ${Math.random() > 0.5 ? 'bg-gray-900' : 'bg-white'}`}
-                      />
-                    ))}
-                  </div>
+                {/* Real QR Code */}
+                <div className="w-40 h-40 p-2 bg-white rounded-lg mb-4 flex items-center justify-center">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(JSON.stringify({
+                      booking_id: booking.booking_id,
+                      movie: movie.title,
+                      date: formattedDate.date,
+                      time: formattedDate.time,
+                      room: `${screening.room_number} (${screening.room_type})`,
+                      seats: seats.sort().join(', '),
+                      total: `$${totalAmount.toFixed(2)}`
+                    }))}`}
+                    alt={`QR Code para reserva #${booking.booking_id}`}
+                    width={200}
+                    height={200}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 
-                <p className="text-xs font-mono text-muted-foreground">
-                  {qrData}
+                <p className="text-xs font-mono text-muted-foreground text-center max-w-[200px]">
+                  Reserva #{booking.booking_id?.toString().padStart(6, '0')}
                 </p>
               </div>
             </div>

@@ -68,6 +68,30 @@ export const User = {
     delete: async (id) => {
         await query('DELETE FROM users WHERE user_id = $1', [id]);
         return true;
+    },
+
+    updateProfile: async (id, { first_name, last_name, email, profile_photo }) => {
+        // Try with profile_photo column first; fall back to without it if column doesn't exist
+        try {
+            const text = `
+                UPDATE users 
+                SET first_name = $1, last_name = $2, email = $3, profile_photo = $4
+                WHERE user_id = $5 
+                RETURNING user_id, first_name, last_name, email, profile_photo
+            `;
+            const result = await query(text, [first_name, last_name, email, profile_photo, id]);
+            return result.rows[0];
+        } catch (err) {
+            // If profile_photo column doesn't exist, update without it
+            const text = `
+                UPDATE users 
+                SET first_name = $1, last_name = $2, email = $3
+                WHERE user_id = $4 
+                RETURNING user_id, first_name, last_name, email
+            `;
+            const result = await query(text, [first_name, last_name, email, id]);
+            return result.rows[0];
+        }
     }
 
 };

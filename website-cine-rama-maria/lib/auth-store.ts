@@ -15,6 +15,7 @@ export interface User {
   email: string
   status: 'Activo' | 'Inactivo'
   role_name: 'Gerente' | 'Empleado'
+  profile_photo?: string | null
 }
 
 interface AuthState {
@@ -30,6 +31,7 @@ interface AuthState {
   clearError: () => void
   setUser: (user: User, token: string) => void
   fetchProfile: () => Promise<void>
+  updateProfile: (data: { first_name?: string; last_name?: string; email?: string; current_password?: string; new_password?: string; profile_photo?: string | null }) => Promise<{ success: boolean; error?: string }>
 }
 
 // Mock user for development when backend is unavailable
@@ -135,6 +137,43 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error("Error al traer el perfil:", error);
+        }
+      },
+
+      updateProfile: async (profileData) => {
+        const { token } = get()
+        if (!token) return { success: false, error: 'No autenticado' }
+
+        try {
+          const response = await fetch(`${BASE_URL}/auth/me`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(profileData),
+          });
+          const data = await response.json();
+          const realData = data.data || data;
+
+          if (response.ok) {
+            // Update the user in the store with the new data
+            const currentUser = get().user;
+            set({
+              user: {
+                ...currentUser!,
+                first_name: realData.first_name || currentUser?.first_name || '',
+                last_name: realData.last_name || currentUser?.last_name || '',
+                email: realData.email || currentUser?.email || '',
+                profile_photo: realData.profile_photo ?? currentUser?.profile_photo,
+              }
+            });
+            return { success: true };
+          } else {
+            return { success: false, error: data.message || 'Error al actualizar el perfil' };
+          }
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Error de conexión' };
         }
       },
     }),

@@ -116,10 +116,13 @@ export const login = async (req, res) => {
         // req.user viene inyectado por el authMiddleware
         const user = await User.findByEmail(req.user.email);
         return successResponse(res, 'Perfil recuperado', {
-            id: user.user_id,
-            name: `${user.first_name} ${user.last_name}`,
+            user_id: user.user_id,
+            first_name: user.first_name,
+            last_name: user.last_name,
             email: user.email,
-            role: user.role_name
+            role_name: user.role_name,
+            status: user.status,
+            profile_photo: user.profile_photo || null,
         });
     } catch (error) {
         return errorResponse(res, 'Error al recuperar perfil');
@@ -155,5 +158,54 @@ export const login = async (req, res) => {
     } catch (error) {
         console.error('Error en recoverPassword:', error);
         return errorResponse(res, 'Hubo un error al intentar recuperar la contraseña. Intenta más tarde.');
+    }
+};
+
+/**
+ * Actualizar perfil del usuario autenticado
+ */
+export const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.user_id || req.user.id;
+        const { first_name, last_name, email, current_password, new_password, profile_photo } = req.body;
+
+        // Get current user data
+        const currentUser = await User.findByEmail(req.user.email);
+        if (!currentUser) {
+            return errorResponse(res, 'Usuario no encontrado', 404);
+        }
+
+        // If changing password, verify current password
+        if (new_password) {
+            if (!current_password) {
+                return errorResponse(res, 'Debe proporcionar la contraseña actual para cambiarla', 400);
+            }
+            const isPasswordCorrect = await verified(current_password, currentUser.password);
+            if (!isPasswordCorrect) {
+                return errorResponse(res, 'La contraseña actual es incorrecta', 401);
+            }
+            const hashedNewPassword = await encrypt(new_password);
+            await User.updatePassword(currentUser.user_id, hashedNewPassword);
+        }
+
+        // Update profile fields
+        const updatedUser = await User.updateProfile(currentUser.user_id, {
+            first_name: first_name || currentUser.first_name,
+            last_name: last_name || currentUser.last_name,
+            email: email || currentUser.email,
+            profile_photo: profile_photo !== undefined ? profile_photo : (currentUser.profile_photo || null),
+        });
+
+        return successResponse(res, 'Perfil actualizado exitosamente', {
+            user_id: updatedUser.user_id,
+            first_name: updatedUser.first_name,
+            last_name: updatedUser.last_name,
+            email: updatedUser.email,
+            role_name: currentUser.role_name,
+            profile_photo: updatedUser.profile_photo || null,
+        });
+    } catch (error) {
+        console.error('Error en updateProfile:', error);
+        return errorResponse(res, 'Error al actualizar el perfil: ' + error.message);
     }
 };
