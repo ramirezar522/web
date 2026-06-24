@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
+
 
 // Importación de rutas 
 import authRoutes from './routes/auth.routes.js';
@@ -62,7 +65,28 @@ app.use((req, res) => {
 // --- CONFIGURACIÓN DEL PUERTO ---
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
+
+wss.on('connection', (ws) => {
+  console.log('Cliente WebSocket conectado');
+  
+  ws.on('message', (message) => {
+    console.log(`Mensaje WebSocket recibido: ${message}`);
+    // Reenviar mensaje a todos los clientes conectados (broadcast)
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) { // 1 = WS OPEN
+        client.send(message.toString());
+      }
+    });
+  });
+
+  ws.on('close', () => {
+    console.log('Cliente WebSocket desconectado');
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`Servidor en: http://localhost:${PORT}`);
   console.log(`Proyecto Cine`);
 });

@@ -21,7 +21,7 @@ const userSchema = z.object({
     .int()
     .positive({ message: "El rol es obligatorio" }),
     
-  status: z.enum(['Activo', 'Desactivo', 'Bloqueado'], {
+  status: z.enum(['Activo', 'Desactivo', 'Bloqueado', 'Inactivo'], {
     errorMap: () => ({ message: "Estado de usuario no válido" })
   })
 });

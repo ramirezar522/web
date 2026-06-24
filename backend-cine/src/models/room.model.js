@@ -1,9 +1,21 @@
 import db from '../config/db.js';
 
 const Room = {
-    // Obtener todas las salas ordenadas por número
+    // Obtener todas las salas ordenadas por número con ocupación real
     findAll: async () => {
-        const { rows } = await db.query('SELECT * FROM rooms ORDER BY room_number ASC');
+        const query = `
+            SELECT r.*, 
+            COALESCE(
+                (SELECT COUNT(sa.assignment_id)
+                 FROM seat_assignments sa
+                 JOIN bookings b ON sa.booking_id = b.booking_id
+                 JOIN screenings s ON b.screening_id = s.screening_id
+                 WHERE s.room_id = r.room_id AND b.booking_status = 'Confirmada'
+                ), 0
+            ) as occupied_seats
+            FROM rooms r 
+            ORDER BY r.room_number ASC`;
+        const { rows } = await db.query(query);
         return rows;
     },
 

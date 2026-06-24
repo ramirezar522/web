@@ -29,7 +29,7 @@ export const authMiddleware = (req, res, next) => {
 // Middleware para verificar si es Gerente
 export const isGerente = (req, res, next) => {
     // Nota: Asegúrate de que el payload del JWT tenga el campo 'role'
-    if (req.user.role !== 'Gerente') {
+    if (req.user.role?.toUpperCase() !== 'GERENTE') {
         return res.status(403).json({ message: "Acceso restringido: Se requiere rol de Gerente" });
     }
     next();

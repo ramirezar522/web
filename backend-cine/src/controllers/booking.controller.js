@@ -22,7 +22,8 @@ export const getAllBookings = async (req, res) => {
                 m.poster_url,
                 m.genre as genre_name,
                 s.date_time as screening_time,
-                u.first_name as staff_name
+                u.first_name as staff_name,
+                (SELECT COUNT(*) FROM seat_assignments sa WHERE sa.booking_id = b.booking_id) as seats_count
             FROM bookings b
             JOIN customers c ON b.customer_id = c.customer_id
             JOIN screenings s ON b.screening_id = s.screening_id
