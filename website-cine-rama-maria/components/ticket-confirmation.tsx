@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { QrCode, Calendar, Clock, MapPin, Film, Armchair, CheckCircle2 } from 'lucide-react'
+import { useMemo, useState, useRef } from 'react'
+import { QrCode, Calendar, Clock, MapPin, Film, Armchair, CheckCircle2, Download, Loader2, ExternalLink } from 'lucide-react'
 import { type Movie, type Screening, type Booking, bookingsApi } from '@/lib/api'
 import { useAuthStore } from '@/lib/auth-store'
 
@@ -49,9 +49,17 @@ Total: $${totalAmount.toFixed(2)}`.trim();
   }, [booking.booking_id, movie.title, formattedDate, screening, seats, totalAmount])
 
   const { user } = useAuthStore()
+  const ticketCardRef = useRef<HTMLDivElement>(null)
   const [isSending, setIsSending] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [emailMessage, setEmailMessage] = useState('')
+
+  // URL to the visual ticket page
+  const ticketUrl = useMemo(() => {
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${base}/reservas/ticket/${booking.booking_id}`;
+  }, [booking.booking_id])
 
   const handleSendEmail = async () => {
     setIsSending(true)
@@ -71,34 +79,29 @@ Total: $${totalAmount.toFixed(2)}`.trim();
     setIsSending(false)
   }
 
-  const handleDownload = () => {
-    const ticketText = `
-==================================================
-                   CINELUX TICKET
-==================================================
-Reserva: #${booking.booking_id!.toString().padStart(6, '0')}
-Película: ${movie.title}
-Director: ${movie.director}
-Duración: ${movie.duration} min
-Fecha: ${formattedDate.date}
-Hora: ${formattedDate.time}
-Sala: ${screening.room_number} (${screening.room_type})
-Asientos: ${seats.sort().join(', ')}
-Total pagado: $${totalAmount.toFixed(2)}
-Código de entrada: ${qrData}
-==================================================
-Presente este ticket en la entrada del cine.
-¡Disfrute de la función!
-==================================================
-`.trim();
-
-    const blob = new Blob([ticketText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ticket-cinelux-${booking.booking_id}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleDownload = async () => {
+    if (!ticketCardRef.current) return
+    setIsDownloading(true)
+    try {
+      const html2canvas = (await import('html2canvas-pro')).default
+      const canvas = await html2canvas(ticketCardRef.current, {
+        backgroundColor: '#0d0d1a',
+        scale: 2,
+        useCORS: true,
+      })
+      canvas.toBlob((blob: Blob | null) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `ticket-cinelux-${booking.booking_id}.webp`
+        link.click()
+        URL.revokeObjectURL(url)
+      }, 'image/webp', 0.95)
+    } catch (err) {
+      console.error('Error generating ticket image:', err)
+    }
+    setIsDownloading(false)
   }
 
   return (
@@ -117,7 +120,7 @@ Presente este ticket en la entrada del cine.
       </div>
 
       {/* Ticket Card */}
-      <div className="relative bg-gradient-to-br from-card to-secondary rounded-2xl overflow-hidden border border-border">
+      <div ref={ticketCardRef} className="relative bg-gradient-to-br from-card to-secondary rounded-2xl overflow-hidden border border-border">
         {/* Gold accent line */}
         <div className="h-2 bg-gradient-to-r from-primary via-accent to-primary" />
         
@@ -193,22 +196,15 @@ Presente este ticket en la entrada del cine.
                   Código de entrada
                 </p>
                 
-                {/* Real QR Code */}
+                {/* Real QR Code - links to visual ticket page */}
                 <div className="w-40 h-40 p-2 bg-white rounded-lg mb-4 flex items-center justify-center">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(JSON.stringify({
-                      booking_id: booking.booking_id,
-                      movie: movie.title,
-                      date: formattedDate.date,
-                      time: formattedDate.time,
-                      room: `${screening.room_number} (${screening.room_type})`,
-                      seats: seats.sort().join(', '),
-                      total: `$${totalAmount.toFixed(2)}`
-                    }))}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketUrl)}`}
                     alt={`QR Code para reserva #${booking.booking_id}`}
                     width={200}
                     height={200}
                     className="w-full h-full object-contain"
+                    crossOrigin="anonymous"
                   />
                 </div>
                 
@@ -265,20 +261,42 @@ Presente este ticket en la entrada del cine.
       )}
 
       {/* Action buttons */}
-      <div className="mt-6 flex gap-3">
-        <button 
-          onClick={handleDownload}
-          className="flex-1 py-3 rounded-lg border border-border text-foreground font-medium hover:bg-secondary transition-colors"
+      <div className="mt-6 flex flex-col gap-3">
+        <div className="flex gap-3">
+          <button 
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex-1 py-3 rounded-lg border border-border text-foreground font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generando...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Descargar (WebP)
+              </>
+            )}
+          </button>
+          <button 
+            onClick={handleSendEmail}
+            disabled={isSending}
+            className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {isSending ? 'Enviando...' : 'Enviar por Email'}
+          </button>
+        </div>
+        <a
+          href={ticketUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full py-3 rounded-lg border border-primary/30 text-primary font-medium hover:bg-primary/10 transition-colors flex items-center justify-center gap-2"
         >
-          Descargar Ticket
-        </button>
-        <button 
-          onClick={handleSendEmail}
-          disabled={isSending}
-          className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-        >
-          {isSending ? 'Enviando...' : 'Enviar por Email'}
-        </button>
+          <ExternalLink className="w-4 h-4" />
+          Ver Ticket Visual Completo
+        </a>
       </div>
     </div>
   )
