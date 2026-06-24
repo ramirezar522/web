@@ -55,11 +55,22 @@ Total: $${totalAmount.toFixed(2)}`.trim();
   const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [emailMessage, setEmailMessage] = useState('')
 
-  // URL to the visual ticket page
+  // URL to the visual ticket page with all data encoded in search params
   const ticketUrl = useMemo(() => {
     const base = typeof window !== 'undefined' ? window.location.origin : '';
-    return `${base}/reservas/ticket/${booking.booking_id}`;
-  }, [booking.booking_id])
+    const params = new URLSearchParams({
+      movie: movie.title,
+      genre: movie.genre_name || '',
+      duration: String(movie.duration || ''),
+      date: formattedDate.date,
+      time: formattedDate.time,
+      room: String(screening.room_number || ''),
+      roomType: screening.room_type || '',
+      seats: seats.sort().join(', '),
+      total: totalAmount.toFixed(2),
+    });
+    return `${base}/reservas/ticket/${booking.booking_id}?${params.toString()}`;
+  }, [booking.booking_id, movie, formattedDate, screening, seats, totalAmount])
 
   const handleSendEmail = async () => {
     setIsSending(true)

@@ -1,69 +1,32 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { useParams } from 'next/navigation'
-import { bookingsApi, seatsApi, moviesApi, screeningsApi } from '@/lib/api'
+import { useRef, useState, useMemo } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { Film, Calendar, Clock, MapPin, Armchair, QrCode, Download, Loader2 } from 'lucide-react'
-import type { Booking, Movie, Screening } from '@/lib/api'
 
 export default function TicketPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const ticketId = params.id as string
   const ticketRef = useRef<HTMLDivElement>(null)
-
-  const [booking, setBooking] = useState<Booking | null>(null)
-  const [movie, setMovie] = useState<Movie | null>(null)
-  const [screening, setScreening] = useState<Screening | null>(null)
-  const [seats, setSeats] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  useEffect(() => {
-    async function loadTicket() {
-      try {
-        // Fetch booking data
-        const { data: bookingData, error: bookingError } = await bookingsApi.getById(Number(ticketId))
-        if (bookingError || !bookingData?.booking_id) {
-          setError('Ticket no encontrado')
-          setLoading(false)
-          return
-        }
-        setBooking(bookingData)
+  // Read ticket data from URL search params (encoded by ticket-confirmation)
+  const ticketData = useMemo(() => {
+    const movie = searchParams.get('movie') || 'Película'
+    const genre = searchParams.get('genre') || ''
+    const duration = searchParams.get('duration') || ''
+    const date = searchParams.get('date') || '---'
+    const time = searchParams.get('time') || '---'
+    const room = searchParams.get('room') || '---'
+    const roomType = searchParams.get('roomType') || ''
+    const seats = searchParams.get('seats') || '---'
+    const total = searchParams.get('total') || '0.00'
 
-        // Fetch seats
-        const { data: seatsData } = await seatsApi.getByBooking(bookingData.booking_id!)
-        const seatNames = seatsData?.map((s: any) => s.seat_number || `A${s.assignment_id}`) || []
-        setSeats(seatNames)
+    return { movie, genre, duration, date, time, room, roomType, seats, total }
+  }, [searchParams])
 
-        // Fetch screening
-        if (bookingData.screening_id) {
-          const { data: allScreenings } = await screeningsApi.getAll()
-          const scr = allScreenings.find((s: Screening) => s.screening_id === bookingData.screening_id)
-          if (scr) {
-            setScreening(scr)
-            // Fetch movie
-            if (scr.movie_id) {
-              const { data: movieData } = await moviesApi.getById(scr.movie_id)
-              if (movieData) setMovie(movieData)
-            }
-          }
-        }
-      } catch (err: any) {
-        setError(err.message || 'Error al cargar el ticket')
-      }
-      setLoading(false)
-    }
-    if (ticketId) loadTicket()
-  }, [ticketId])
-
-  const formattedDate = screening?.date_time ? (() => {
-    const date = new Date(screening.date_time)
-    return {
-      date: date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      time: date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-    }
-  })() : { date: '---', time: '---' }
+  const hasData = searchParams.get('movie') !== null
 
   const handleDownloadImage = async () => {
     if (!ticketRef.current) return
@@ -90,30 +53,17 @@ export default function TicketPage() {
     setIsDownloading(false)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0d0d1a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
-          <p className="text-white/60 text-sm">Cargando ticket...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !booking) {
+  if (!hasData) {
     return (
       <div className="min-h-screen bg-[#0d0d1a] flex items-center justify-center px-4">
         <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-8 text-center max-w-sm">
           <QrCode className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Ticket No Encontrado</h2>
-          <p className="text-white/50 text-sm">{error || 'El ticket solicitado no existe o ha expirado.'}</p>
+          <p className="text-white/50 text-sm">El ticket solicitado no existe o el enlace está incompleto.</p>
         </div>
       </div>
     )
   }
-
-  const totalAmount = (screening as any)?.price ? Number((screening as any).price) * seats.length : 0
 
   return (
     <div className="min-h-screen bg-[#0d0d1a] flex flex-col items-center justify-center p-4 sm:p-8">
@@ -145,10 +95,10 @@ export default function TicketPage() {
 
             {/* Movie Title */}
             <h1 className="text-2xl font-bold text-white mb-1 leading-tight">
-              {movie?.title || booking.movie_title || 'Película'}
+              {ticketData.movie}
             </h1>
             <p className="text-white/40 text-sm">
-              {movie?.genre_name || ''}{movie?.genre_name && movie?.duration ? ' · ' : ''}{movie?.duration ? `${movie.duration} min` : ''}
+              {ticketData.genre}{ticketData.genre && ticketData.duration ? ' · ' : ''}{ticketData.duration ? `${ticketData.duration} min` : ''}
             </p>
           </div>
 
@@ -160,14 +110,14 @@ export default function TicketPage() {
                   <Calendar className="w-4 h-4 text-amber-500" />
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Fecha</span>
                 </div>
-                <p className="text-sm font-medium text-white capitalize leading-snug">{formattedDate.date}</p>
+                <p className="text-sm font-medium text-white capitalize leading-snug">{ticketData.date}</p>
               </div>
               <div className="bg-white/5 rounded-xl p-4 border border-white/5">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="w-4 h-4 text-amber-500" />
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Hora</span>
                 </div>
-                <p className="text-sm font-medium text-white">{formattedDate.time}</p>
+                <p className="text-sm font-medium text-white">{ticketData.time}</p>
               </div>
               <div className="bg-white/5 rounded-xl p-4 border border-white/5">
                 <div className="flex items-center gap-2 mb-2">
@@ -175,7 +125,7 @@ export default function TicketPage() {
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Sala</span>
                 </div>
                 <p className="text-sm font-medium text-white">
-                  {screening?.room_number || '---'}{screening?.room_type ? ` (${screening.room_type})` : ''}
+                  {ticketData.room}{ticketData.roomType ? ` (${ticketData.roomType})` : ''}
                 </p>
               </div>
               <div className="bg-white/5 rounded-xl p-4 border border-white/5">
@@ -184,7 +134,7 @@ export default function TicketPage() {
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Asientos</span>
                 </div>
                 <p className="text-sm font-medium text-white">
-                  {seats.length > 0 ? seats.sort().join(', ') : '---'}
+                  {ticketData.seats}
                 </p>
               </div>
             </div>
@@ -221,14 +171,14 @@ export default function TicketPage() {
                 <div>
                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold mb-0.5">Reserva</p>
                   <p className="text-lg font-mono font-bold text-amber-500">
-                    #{booking.booking_id?.toString().padStart(6, '0')}
+                    #{ticketId.padStart(6, '0')}
                   </p>
                 </div>
-                {totalAmount > 0 && (
+                {Number(ticketData.total) > 0 && (
                   <div>
                     <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold mb-0.5">Total</p>
                     <p className="text-2xl font-bold text-white">
-                      ${totalAmount.toFixed(2)}
+                      ${Number(ticketData.total).toFixed(2)}
                     </p>
                   </div>
                 )}
@@ -245,7 +195,7 @@ export default function TicketPage() {
         </div>
       </div>
 
-      {/* Download Button (outside the ticket for capture) */}
+      {/* Download Button */}
       <button
         onClick={handleDownloadImage}
         disabled={isDownloading}
