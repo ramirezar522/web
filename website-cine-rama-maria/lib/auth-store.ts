@@ -104,8 +104,16 @@ export const useAuthStore = create<AuthState>()(
       loginWithGoogle: async (credential: string) => {
         set({ isLoading: true, error: null })
         try {
-          // Decode the Google JWT to extract user info
-          const payload = JSON.parse(atob(credential.split('.')[1]))
+          // Decode the Google JWT to extract user info (UTF-8 safe and base64url compliant)
+          const base64Url = credential.split('.')[1]
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          )
+          const payload = JSON.parse(jsonPayload)
           const googleUser: User = {
             user_id: 0,
             first_name: payload.given_name || payload.name?.split(' ')[0] || 'Usuario',
