@@ -136,7 +136,15 @@ export const useAuthStore = create<AuthState>()(
               const realData = data.data || data
               if (realData.token) {
                 set({
-                  user: realData.user || googleUser,
+                  user: {
+                    user_id: realData.user.id || realData.user.user_id || 0,
+                    first_name: realData.user.name?.split(' ')[0] || googleUser.first_name,
+                    last_name: realData.user.name?.split(' ').slice(1).join(' ') || googleUser.last_name,
+                    email: realData.user.email,
+                    status: 'Activo',
+                    role_name: realData.user.role || 'Empleado',
+                    profile_photo: realData.user.profile_photo || null,
+                  },
                   token: realData.token,
                   isAuthenticated: true,
                   isLoading: false,
@@ -145,11 +153,94 @@ export const useAuthStore = create<AuthState>()(
                 return true
               }
             }
-          } catch {
-            // Backend doesn't support Google auth yet, use client-side session
+          } catch (e) {
+            console.warn('Backend /auth/google not ready or failed, trying fallback...', e)
           }
 
-          // Fallback: create a client-side session with Google user info
+          // Fallback: Authenticate via existing public /auth/login and /auth/register endpoints
+          try {
+            const googleSecretPassword = `GoogleAuthPassword-${payload.sub || payload.email}`
+            
+            // Try to login
+            const loginRes = await fetch(`${BASE_URL}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: payload.email, password: googleSecretPassword }),
+            })
+
+            if (loginRes.ok) {
+              const loginData = await loginRes.json()
+              const realData = loginData.data || loginData
+              if (realData.token) {
+                set({
+                  user: {
+                    user_id: realData.user.id || realData.user.user_id || 0,
+                    first_name: realData.user.name?.split(' ')[0] || googleUser.first_name,
+                    last_name: realData.user.name?.split(' ').slice(1).join(' ') || googleUser.last_name,
+                    email: realData.user.email,
+                    status: 'Activo',
+                    role_name: realData.user.role || 'Empleado',
+                    profile_photo: realData.user.profile_photo || null,
+                  },
+                  token: realData.token,
+                  isAuthenticated: true,
+                  isLoading: false,
+                  error: null,
+                })
+                return true
+              }
+            } else {
+              // User not registered with Google secret password yet, register them
+              const registerRes = await fetch(`${BASE_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  first_name: googleUser.first_name,
+                  last_name: googleUser.last_name,
+                  email: googleUser.email,
+                  password: googleSecretPassword,
+                  role_id: 2, // Empleado
+                  status: 'Activo'
+                }),
+              })
+
+              if (registerRes.ok) {
+                // Try logging in again now that the account is created
+                const loginRes2 = await fetch(`${BASE_URL}/auth/login`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: payload.email, password: googleSecretPassword }),
+                })
+
+                if (loginRes2.ok) {
+                  const loginData2 = await loginRes2.json()
+                  const realData2 = loginData2.data || loginData2
+                  if (realData2.token) {
+                    set({
+                      user: {
+                        user_id: realData2.user.id || realData2.user.user_id || 0,
+                        first_name: realData2.user.name?.split(' ')[0] || googleUser.first_name,
+                        last_name: realData2.user.name?.split(' ').slice(1).join(' ') || googleUser.last_name,
+                        email: realData2.user.email,
+                        status: 'Activo',
+                        role_name: realData2.user.role || 'Empleado',
+                        profile_photo: realData2.user.profile_photo || null,
+                      },
+                      token: realData2.token,
+                      isAuthenticated: true,
+                      isLoading: false,
+                      error: null,
+                    })
+                    return true
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Fallback login/register failed:', err)
+          }
+
+          // Fallback 2: create a client-side session with Google user info (Offline mode)
           set({
             user: googleUser,
             token: `google-${credential.substring(0, 50)}`,
