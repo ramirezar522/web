@@ -152,9 +152,13 @@ export default function MyBookingsPage() {
     }
 
     if (data) {
+      const loggedUserId = user?.user_id || (user as any)?.id
+      // Filter bookings where user_id matches the logged-in user's ID
+      const userBookings = data.filter((b: Booking) => b.user_id === loggedUserId)
+
       // Fetch seats for each booking
       const bookingsWithSeats: BookingWithSeats[] = await Promise.all(
-        data.map(async (booking: Booking) => {
+        userBookings.map(async (booking: Booking) => {
           const { data: seats } = await seatsApi.getByBooking(booking.booking_id!)
           return { ...booking, seats: seats || [] }
         })

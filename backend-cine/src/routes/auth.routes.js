@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, register, getProfile, recoverPassword, updateProfile } from '../controllers/auth.controller.js';
+import { login, register, getProfile, recoverPassword, updateProfile, googleLogin } from '../controllers/auth.controller.js';
 import { authMiddleware, isGerente } from '../middlewares/auth.js';
 
 const router = Router();
@@ -7,6 +7,10 @@ const router = Router();
 // POST /api/auth/login
 // PÚBLICO: Acceso al sistema para todo el personal
 router.post('/login', login);
+
+// POST /api/auth/google
+// PÚBLICO: Acceso con Google
+router.post('/google', googleLogin);
 
 // POST /api/auth/register
 // PÚBLICO: Registro de nuevo personal/usuarios

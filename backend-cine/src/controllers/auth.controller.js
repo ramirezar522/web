@@ -209,3 +209,64 @@ export const updateProfile = async (req, res) => {
         return errorResponse(res, 'Error al actualizar el perfil: ' + error.message);
     }
 };
+
+/**
+ * Lógica para Login/Registro con Google
+ */
+export const googleLogin = async (req, res) => {
+    try {
+        const { email, name } = req.body;
+
+        if (!email) {
+            return errorResponse(res, 'El correo electrónico es requerido', 400);
+        }
+
+        // 1. Buscar si el usuario ya existe
+        let user = await User.findByEmail(email);
+
+        if (!user) {
+            // 2. Si no existe, lo creamos
+            const names = name ? name.split(' ') : ['Usuario', 'Google'];
+            const first_name = names[0] || 'Usuario';
+            const last_name = names.slice(1).join(' ') || 'Google';
+            
+            // Generar una contraseña aleatoria encriptada
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+            const hashedPassword = await encrypt(randomPassword);
+
+            await User.create({
+                first_name,
+                last_name,
+                email,
+                password: hashedPassword,
+                role_id: 2, // Empleado / Cliente por defecto
+                status: 'Activo'
+            });
+
+            // Volvemos a consultar para traer el rol y toda la estructura correcta
+            user = await User.findByEmail(email);
+        }
+
+        // 3. Verificar si el usuario está activo
+        if (user.status !== 'Activo') {
+            return errorResponse(res, 'La cuenta se encuentra desactivada o bloqueada', 403);
+        }
+
+        // 4. Generar el Token JWT
+        const token = generateToken(user);
+
+        // 5. Devolver datos en el formato correcto
+        return successResponse(res, 'Sesión iniciada con Google', {
+            user: {
+                id: user.user_id,
+                name: `${user.first_name} ${user.last_name}`,
+                email: user.email,
+                role: user.role_name
+            },
+            token
+        });
+    } catch (error) {
+        console.error('Error en googleLogin:', error);
+        return errorResponse(res, 'Error al iniciar sesión con Google: ' + error.message);
+    }
+};
