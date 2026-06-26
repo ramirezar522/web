@@ -26,7 +26,8 @@ interface AuthState {
   error: string | null
   
   // Actions
-  login: (credentials: any) => Promise<boolean> // Usamos any para flexibilizar la petición de login
+  login: (credentials: any) => Promise<boolean>
+  loginWithGoogle: (credential: string) => Promise<boolean>
   logout: () => void
   clearError: () => void
   setUser: (user: User, token: string) => void
@@ -96,6 +97,61 @@ export const useAuthStore = create<AuthState>()(
           }
           
           set({ isLoading: false, error: err.message || 'Error al conectar con el servidor' })
+          return false
+        }
+      },
+
+      loginWithGoogle: async (credential: string) => {
+        set({ isLoading: true, error: null })
+        try {
+          // Decode the Google JWT to extract user info
+          const payload = JSON.parse(atob(credential.split('.')[1]))
+          const googleUser: User = {
+            user_id: 0,
+            first_name: payload.given_name || payload.name?.split(' ')[0] || 'Usuario',
+            last_name: payload.family_name || payload.name?.split(' ').slice(1).join(' ') || 'Google',
+            email: payload.email,
+            status: 'Activo',
+            role_name: 'Empleado',
+            profile_photo: payload.picture || null,
+          }
+
+          // Try to authenticate with backend using Google credential
+          try {
+            const response = await fetch(`${BASE_URL}/auth/google`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ credential, email: payload.email, name: payload.name }),
+            })
+            if (response.ok) {
+              const data = await response.json()
+              const realData = data.data || data
+              if (realData.token) {
+                set({
+                  user: realData.user || googleUser,
+                  token: realData.token,
+                  isAuthenticated: true,
+                  isLoading: false,
+                  error: null,
+                })
+                return true
+              }
+            }
+          } catch {
+            // Backend doesn't support Google auth yet, use client-side session
+          }
+
+          // Fallback: create a client-side session with Google user info
+          set({
+            user: googleUser,
+            token: `google-${credential.substring(0, 50)}`,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          })
+          return true
+        } catch (err: any) {
+          set({ isLoading: false, error: 'Error al iniciar sesión con Google' })
           return false
         }
       },

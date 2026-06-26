@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff, Film, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
+import { GoogleSignInButton } from '@/components/google-sign-in'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -71,6 +72,16 @@ export default function LoginPage() {
               <p className="text-sm text-destructive">{error || validationError}</p>
             </div>
           )}
+
+          {/* Google Sign-In */}
+          <GoogleSignInButton text="continue_with" />
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">o ingresa con email</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

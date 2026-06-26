@@ -77,15 +77,42 @@ Total: $${totalAmount.toFixed(2)}`.trim();
     setEmailStatus('idle')
     setEmailMessage('')
 
-    const recipientEmail = user?.email || undefined;
-    const { data, error } = await bookingsApi.sendEmail(booking.booking_id!, recipientEmail)
-
-    if (error) {
+    const recipientEmail = user?.email;
+    if (!recipientEmail) {
       setEmailStatus('error')
-      setEmailMessage(error)
-    } else {
+      setEmailMessage('No se encontró un correo electrónico. Inicia sesión para enviar el ticket.')
+      setIsSending(false)
+      return
+    }
+
+    try {
+      const emailjs = (await import('@emailjs/browser')).default
+
+      const templateParams = {
+        to_email: recipientEmail,
+        to_name: `${user?.first_name || ''} ${user?.last_name || ''}`.trim(),
+        booking_id: booking.booking_id?.toString().padStart(6, '0'),
+        movie_title: movie.title,
+        movie_date: formattedDate.date,
+        movie_time: formattedDate.time,
+        room: `${screening.room_number}${screening.room_type ? ` (${screening.room_type})` : ''}`,
+        seats: seats.sort().join(', '),
+        total: `$${totalAmount.toFixed(2)}`,
+        ticket_url: ticketUrl,
+      }
+
+      await emailjs.send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'service_cinelux',
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'template_ticket',
+        templateParams,
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''
+      )
+
       setEmailStatus('success')
-      setEmailMessage(data?.previewUrl ? `¡Enviado! Puedes previsualizarlo aquí: ${data.previewUrl}` : '¡Ticket enviado al correo con éxito!')
+      setEmailMessage(`¡Ticket enviado a ${recipientEmail} con éxito!`)
+    } catch (err: any) {
+      setEmailStatus('error')
+      setEmailMessage(err?.text || err?.message || 'Error al enviar el email. Verifica la configuración de EmailJS.')
     }
     setIsSending(false)
   }
