@@ -85,8 +85,8 @@ export function Header() {
               <User className="w-4 h-4 text-white" />
             </div>
             <div className="text-left hidden sm:block">
-              <p className="text-sm font-medium text-slate-800 dark:text-white">{user.first_name} {user.last_name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{user.role}</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-white">{user?.first_name || ''} {user?.last_name || ''}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{user?.role || ''}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </button>
