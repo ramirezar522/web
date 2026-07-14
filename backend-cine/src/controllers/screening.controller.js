@@ -1,8 +1,16 @@
 import Screening from '../models/screening.model.js';
+import { cacheService } from '../config/cache.js';
 
 export const getAllScreenings = async (req, res) => {
     try {
+        const cacheKey = 'screenings:all';
+        const cachedData = await cacheService.get(cacheKey);
+        if (cachedData) {
+            return res.json(cachedData);
+        }
+
         const screenings = await Screening.findAll();
+        await cacheService.set(cacheKey, screenings, 300); // 5 minutes cache
         res.json(screenings);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -12,6 +20,7 @@ export const getAllScreenings = async (req, res) => {
 export const createScreening = async (req, res) => {
     try {
         const newScreening = await Screening.create(req.body);
+        await cacheService.delete('screenings:all');
         res.status(201).json(newScreening);
     } catch (error) {
         // Error de llave foránea (si la película o sala no existen en la DB)
@@ -27,6 +36,7 @@ export const createScreening = async (req, res) => {
 export const deleteScreening = async (req, res) => {
     try {
         await Screening.delete(req.params.id);
+        await cacheService.delete('screenings:all');
         res.json({ message: "Función eliminada correctamente" });
     } catch (error) {
         // Protección: no borrar funciones que ya tienen gente con boletos comprados

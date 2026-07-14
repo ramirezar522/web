@@ -1,5 +1,6 @@
 import Movie from '../models/movie.model.js';
 import db from '../config/db.js';
+import { cacheService } from '../config/cache.js';
 
 export const getAllMovies = async (req, res) => {
     try {
@@ -8,6 +9,12 @@ export const getAllMovies = async (req, res) => {
         const genreId = req.query.genre_id ? parseInt(req.query.genre_id, 10) : null;
         const status = req.query.status;
         const search = req.query.search;
+
+        const cacheKey = `movies:all:${page || ''}:${limit || ''}:${genreId || ''}:${status || ''}:${search || ''}`;
+        const cachedData = await cacheService.get(cacheKey);
+        if (cachedData) {
+            return res.json(cachedData);
+        }
         
         let queryStr = `
             SELECT m.*, g.name as genre_name 
@@ -63,8 +70,9 @@ export const getAllMovies = async (req, res) => {
         
         const { rows } = await db.query(queryStr, queryParams);
         
+        let responseData;
         if (page && limit) {
-            return res.json({
+            responseData = {
                 data: rows,
                 pagination: {
                     page,
@@ -72,10 +80,13 @@ export const getAllMovies = async (req, res) => {
                     total,
                     totalPages: Math.ceil(total / limit)
                 }
-            });
+            };
+        } else {
+            responseData = rows;
         }
         
-        res.json(rows);
+        await cacheService.set(cacheKey, responseData, 300); // 5 minutes cache
+        res.json(responseData);
     } catch (error) {
         res.status(500).json({ error: "Error al obtener películas: " + error.message });
     }
@@ -83,8 +94,16 @@ export const getAllMovies = async (req, res) => {
 
 export const getMovieById = async (req, res) => {
     try {
+        const cacheKey = `movies:id:${req.params.id}`;
+        const cachedData = await cacheService.get(cacheKey);
+        if (cachedData) {
+            return res.json(cachedData);
+        }
+
         const movie = await Movie.findById(req.params.id);
         if (!movie) return res.status(404).json({ message: "Película no encontrada" });
+        
+        await cacheService.set(cacheKey, movie, 300); // 5 minutes cache
         res.json(movie);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -94,6 +113,8 @@ export const getMovieById = async (req, res) => {
 export const createMovie = async (req, res) => {
     try {
         const newMovie = await Movie.create(req.body);
+        // Invalidate list caches
+        await cacheService.deletePrefix('movies:all:');
         res.status(201).json(newMovie);
     } catch (error) {
         // Manejo específico si el genre_id no existe en la tabla genres
@@ -108,6 +129,11 @@ export const updateMovie = async (req, res) => {
     try {
         const updated = await Movie.update(req.params.id, req.body);
         if (!updated) return res.status(404).json({ message: "Película no encontrada" });
+        
+        // Invalidate list and specific item caches
+        await cacheService.deletePrefix('movies:all:');
+        await cacheService.delete(`movies:id:${req.params.id}`);
+        
         res.json(updated);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -118,11 +144,15 @@ export const updateMovie = async (req, res) => {
 export const deleteMovie = async (req, res) => {
     const { id } = req.params; // Obtenemos el ID de la URL
     try {
-        const result = await query('DELETE FROM movies WHERE id = $1', [id]);
+        const result = await db.query('DELETE FROM movies WHERE id = $1', [id]);
         
         if (result.rowCount === 0) {
             return res.status(404).json({ message: "Película no encontrada" });
         }
+
+        // Invalidate list and specific item caches
+        await cacheService.deletePrefix('movies:all:');
+        await cacheService.delete(`movies:id:${id}`);
 
         res.json({ message: "Película eliminada correctamente" });
     } catch (error) {

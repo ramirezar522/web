@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as bookingController from '../controllers/booking.controller.js';
 import * as seatController from '../controllers/seat.controller.js';
 import { authMiddleware } from '../middlewares/auth.js';
+import { bookingLimiter } from '../middlewares/rateLimiter.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/', authMiddleware, bookingController.getAllBookings);
  * @route   POST /api/bookings
  * @desc    Registrar una nueva venta/reserva
  */
-router.post('/', authMiddleware, bookingController.createBooking);
+router.post('/', authMiddleware, bookingLimiter, bookingController.createBooking);
 
 /**
  * @route   POST /api/bookings/assign-seats
