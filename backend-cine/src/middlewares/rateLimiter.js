@@ -66,3 +66,15 @@ export const bookingLimiter = rateLimit({
     message: 'Límite de compras excedido. Tu IP ha sido bloqueada por 1 minuto.'
   }
 });
+
+// Reset rate limit counts and 1-minute blocks for an IP on successful action/login
+export const resetLimiterKeys = (ip) => {
+  try {
+    globalLimiter.resetKey(ip);
+    authLimiter.resetKey(ip);
+    blockedIPs.delete(ip);
+    console.log(`[RateLimit] Reset counts and blocks for IP=${ip}`);
+  } catch (err) {
+    console.error(`[RateLimit] Error resetting keys for IP=${ip}:`, err.message);
+  }
+};

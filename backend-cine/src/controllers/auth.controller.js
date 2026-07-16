@@ -5,6 +5,7 @@ import { generateToken } from '../../utils/jwt.handle.js';
 import { successResponse, errorResponse } from '../../utils/response.handle.js';
 import { sendRecoveryEmail } from '../../utils/mailer.hadle.js';
 import { verifyEmailDomain } from '../../utils/email.validator.js';
+import { resetLimiterKeys } from '../middlewares/rateLimiter.js';
 
 /**
  * Lógica de Registro de Usuarios
@@ -45,6 +46,9 @@ export const register = async (req, res) => {
             role_name: 'Empleado', // O el nombre del rol según el role_id
             email: newUser.email
         });
+
+        // Reset rate limiter counts on successful registration
+        resetLimiterKeys(req.ip);
 
         return successResponse(res, 'Registro exitoso', {
             user: {
@@ -90,6 +94,9 @@ export const login = async (req, res) => {
 
         // 4. Generar el Token JWT con los datos del usuario y su rol
         const token = generateToken(user);
+
+        // Reset rate limiter counts on successful login
+        resetLimiterKeys(req.ip);
 
         // 5. Enviar respuesta exitosa con el token y datos básicos
         return successResponse(res, 'Bienvenido al Sistema de Cine', {
@@ -254,6 +261,9 @@ export const googleLogin = async (req, res) => {
 
         // 4. Generar el Token JWT
         const token = generateToken(user);
+
+        // Reset rate limiter counts on successful Google login
+        resetLimiterKeys(req.ip);
 
         // 5. Devolver datos en el formato correcto
         return successResponse(res, 'Sesión iniciada con Google', {
