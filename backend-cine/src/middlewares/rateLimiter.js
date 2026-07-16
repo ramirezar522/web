@@ -28,10 +28,10 @@ const blockHandler = (req, res, next, options) => {
   res.status(options.statusCode).json(options.message);
 };
 
-// Global rate limiter: 150 requests per 5 minutes (allows smooth admin panel navigation)
+// Global rate limiter: 500 requests per 5 minutes (allows heavy admin panel navigation)
 export const globalLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 150,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   handler: blockHandler,
