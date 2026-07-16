@@ -20,12 +20,13 @@ import productRoutes from './routes/product.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import movementRoutes from './routes/movement.routes.js';
 import adminRoutes from './routes/admin.routes.js';
-import { globalLimiter } from './middlewares/rateLimiter.js';
+import { globalLimiter, checkBlockedIPs } from './middlewares/rateLimiter.js';
 
 const app = express();
 
 // --- MIDDLEWARES GLOBALES ---
 app.set('trust proxy', 1); // Confía en el primer proxy (ej. Render, Cloudflare) para obtener IPs reales
+app.use(checkBlockedIPs); // Verifica si la IP está bloqueada por 1 minuto
 app.use(globalLimiter); // Límite global de peticiones
 app.use(cors()); // Permite peticiones desde el frontend
 app.use(morgan('dev')); // Registro de peticiones en consola para depuración

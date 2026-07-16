@@ -1,37 +1,68 @@
 import rateLimit from 'express-rate-limit';
 
-// Global rate limiter for overall API abuse prevention
+// Store for IPs blocked for exactly 1 minute
+const blockedIPs = new Map();
+
+// Helper middleware to check if an IP is currently blocked
+export const checkBlockedIPs = (req, res, next) => {
+  const ip = req.ip;
+  const blockExpiry = blockedIPs.get(ip);
+  
+  if (blockExpiry) {
+    if (Date.now() < blockExpiry) {
+      const remainingSeconds = Math.ceil((blockExpiry - Date.now()) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Acceso bloqueado temporalmente por exceso de peticiones. Intente de nuevo en ${remainingSeconds} segundos.`
+      });
+    } else {
+      blockedIPs.delete(ip); // Expiry passed, unblock
+    }
+  }
+  next();
+};
+
+// Custom handler to trigger the 1-minute block when limits are exceeded
+const blockHandler = (req, res, next, options) => {
+  blockedIPs.set(req.ip, Date.now() + 60 * 1000); // Block IP for exactly 60 seconds
+  res.status(options.statusCode).json(options.message);
+};
+
+// Global rate limiter: 20 requests per 5 minutes
 export const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Limit each IP to 200 requests per window
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: blockHandler,
   message: {
     success: false,
-    message: 'Demasiadas peticiones desde esta IP, por favor intente de nuevo más tarde.'
+    message: 'Límite de peticiones excedido. Tu IP ha sido bloqueada por 1 minuto.'
   }
 });
 
-// Authentication rate limiter to prevent brute-force attacks on credentials
+// Authentication rate limiter: 5 attempts per 15 minutes
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, // Limit each IP to 15 login/register attempts per window
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: blockHandler,
   message: {
     success: false,
-    message: 'Demasiados intentos de inicio de sesión o registro desde esta IP, por favor intente de nuevo en 15 minutos.'
+    message: 'Demasiados intentos de autenticación. Tu IP ha sido bloqueada por 1 minuto.'
   }
 });
 
-// Booking rate limiter to prevent ticket reservation scalping or spam
+// Booking rate limiter: 3 ticket bookings per 15 minutes
 export const bookingLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // Limit each IP to 20 bookings per hour
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: blockHandler,
   message: {
     success: false,
-    message: 'Límite de reservas excedido para esta IP. Por favor intente de nuevo en una hora.'
+    message: 'Límite de compras excedido. Tu IP ha sido bloqueada por 1 minuto.'
   }
 });
