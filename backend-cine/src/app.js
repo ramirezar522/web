@@ -35,6 +35,14 @@ app.use(express.urlencoded({ extended: true })); // Habilita la lectura de datos
 
 // --- DEFINICIÓN DE RUTAS (API ENDPOINTS) ---
 
+app.get('/api/test-ip', (req, res) => {
+  res.json({
+    ip: req.ip,
+    ips: req.ips,
+    headers: req.headers
+  });
+});
+
 app.get('/', (req, res) => {
   res.json({ message: "El servidor de la API del Cine está online y funcionando correctamente." });
 });
